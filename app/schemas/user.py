@@ -12,7 +12,7 @@ class UserCreate(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
     email: EmailStr
-    name: str = Field(min_length=3, max_length=50)
+    username: str = Field(min_length=3, max_length=50)
     password: str = Field(min_length=8, max_length=120)
 
 
@@ -34,7 +34,7 @@ class UserOut(BaseModel):
 
     id: UUID
     email: EmailStr
-    name: str
+    username: str
 
 
 class Token(BaseModel):

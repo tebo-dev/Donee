@@ -32,7 +32,7 @@ class User(Base):
         nullable=False,
     )
 
-    name: Mapped[str] = mapped_column(
+    username: Mapped[str] = mapped_column(
         String(100),
         nullable=False,
     )
