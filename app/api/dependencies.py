@@ -1,11 +1,11 @@
 """Import necessary libraries to create the dependencies."""
 
+from uuid import UUID
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from uuid import UUID
 from app.db.session import get_db
 from app.models.user import User
 from app.core.jwt_handler import decode_access_token
