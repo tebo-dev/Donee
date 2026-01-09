@@ -9,7 +9,7 @@ from app.services.auth_service import register_user, login_user
 from app.api.dependencies import get_current_user
 
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(tags=["auth"])
 
 
 @router.post("/register", response_model=UserOut,

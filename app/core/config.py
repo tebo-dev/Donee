@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = Field(default="/api")
 
     # Database
-    DATABASE_UR: str
+    DATABASE_URL: str
 
     # Authentication / JWT
     JWT_SECRET_KEY: str
