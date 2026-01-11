@@ -2,10 +2,12 @@
 
 from datetime import datetime
 from uuid import UUID
+
 import sqlalchemy as sa
-from sqlalchemy import String, Boolean, DateTime
+from sqlalchemy import Boolean, DateTime, String
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.db.base import Base
 
 
@@ -22,13 +24,13 @@ class User(Base):
     )
 
     email: Mapped[str] = mapped_column(
-        String(100),
+        String(320),
         unique=True,
         nullable=False,
     )
 
     password_hash: Mapped[str] = mapped_column(
-        String(100),
+        String(255),
         nullable=False,
     )
 
@@ -54,4 +56,8 @@ class User(Base):
         server_default=sa.text("now()"),
         onupdate=sa.text("now()"),
         nullable=False,
+    )
+
+    reset_tokens = relationship(
+        "PasswordResetToken", back_populates="user", cascade="all, delete-orphan"
     )

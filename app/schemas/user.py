@@ -1,10 +1,11 @@
 """Import the necessary libraries for user schema creation."""
 
 from uuid import UUID
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 # Requests
+
 
 class UserCreate(BaseModel):
     """Schema to create an user."""
@@ -13,7 +14,7 @@ class UserCreate(BaseModel):
 
     email: EmailStr
     username: str = Field(min_length=3, max_length=50)
-    password: str = Field(min_length=8, max_length=120)
+    password: str = Field(min_length=8, max_length=128)
 
 
 class UserLogin(BaseModel):
@@ -26,6 +27,7 @@ class UserLogin(BaseModel):
 
 
 # Responses
+
 
 class UserOut(BaseModel):
     """Schema to provide a stable form to the client."""
