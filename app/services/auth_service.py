@@ -1,14 +1,15 @@
 """Import necessary libraries for authentication service."""
 
-from sqlalchemy.orm import Session
 from sqlalchemy import select
-from app.models.user import User
-from app.schemas.user import UserCreate, Token
-from app.core.security import hash_password, verify_password
-from app.core.jwt_handler import create_access_token
+from sqlalchemy.orm import Session
 
+from app.core.jwt_handler import create_access_token
+from app.core.security import hash_password, verify_password
+from app.models.user import User
+from app.schemas.user import Token, UserCreate
 
 # Helpers
+
 
 def get_user_by_email(db: Session, email: str) -> User | None:
     """Get an user by their email."""
@@ -25,6 +26,7 @@ def get_user_by_username(db: Session, username: str) -> User | None:
 
 
 # Main service
+
 
 def register_user(db: Session, user_create: UserCreate) -> User:
     """Create a new user."""

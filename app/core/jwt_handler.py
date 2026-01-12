@@ -2,12 +2,15 @@
 
 from datetime import datetime, timedelta, timezone
 from typing import Any
+
 from jose import jwt
+
 from app.core.config import settings
 
 
-def create_access_token(data: dict[str, Any],
-                        expires_delta: timedelta | None = None) -> str:
+def create_access_token(
+    data: dict[str, Any], expires_delta: timedelta | None = None
+) -> str:
     """Create a signed JWT access token."""
 
     to_encode = data.copy()
