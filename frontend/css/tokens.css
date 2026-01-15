@@ -1,0 +1,58 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+:root {
+  /* Colors */
+  --color-bg-base: #010b13;
+  --color-surface: #2f3a5a;
+  --color-accent: #00c2ff;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #b0b8c1;
+  --color-danger: #ff4d4d;
+
+  /* Opacity helpers (glass) */
+  --glass-bg: rgba(47, 58, 90, 0.28);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+
+  /* Radius */
+  --radius-lg: 20px;
+  --radius-md: 12px;
+  --radius-sm: 10px;
+  --radius-pill: 999px;
+
+  /* Spacing (8px grid) */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 48px;
+
+  /* Typography */
+  --font-brand: "Neue Montreal", "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  --font-ui: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+
+  /* Type scale */
+  --text-body: 16px;
+  --text-input: 16px;
+  --text-button: 17px;
+
+  /* Headings */
+  --text-h1: clamp(48px, 6vw, 64px);
+  --text-h2: clamp(32px, 4vw, 40px);
+
+  /* Weights */
+  --w-regular: 400;
+  --w-medium: 500;
+  --w-semibold: 600;
+  --w-bold: 700;
+  --w-extrabold: 800;
+
+  /* Layout */
+  --max-card: 360px;
+
+  /* Focus */
+  --focus-ring: 0 0 0 3px rgba(0, 194, 255, 0.18);
+
+  /* Background animation */
+  --bg-anim-opacity: 0.7;
+}

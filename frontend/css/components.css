@@ -1,0 +1,160 @@
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-ui);
+  color: var(--color-text-primary);
+  background: var(--color-bg-base);
+  overflow: hidden;
+}
+
+/* ---- Background ---- */
+.bg {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(1200px 700px at 70% 35%, rgba(0, 194, 255, 0.16), transparent 60%),
+    radial-gradient(1000px 600px at 25% 70%, rgba(120, 140, 255, 0.12), transparent 55%),
+    linear-gradient(120deg, #010b13, #061226, #020a14);
+}
+
+.bg::after {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(0, 194, 255, 0.16),
+    rgba(120, 140, 255, 0.12),
+    rgba(0, 194, 255, 0.16)
+  );
+  filter: blur(60px);
+  opacity: var(--bg-anim-opacity);
+  animation: spin 45s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg) scale(1.05); }
+  to   { transform: rotate(360deg) scale(1.05); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg::after { animation: none; }
+}
+
+/* ---- Layout helpers ---- */
+.page {
+  position: relative;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: var(--space-3);
+}
+
+.stack {
+  display: grid;
+  gap: var(--space-2);
+}
+
+/* ---- Typography roles ---- */
+.brand-title {
+  font-family: var(--font-brand);
+  font-weight: var(--w-extrabold);
+  font-size: var(--text-h1);
+  text-align: center;
+  letter-spacing: 0.08em;
+  margin: 0 0 var(--space-2);
+}
+
+.card-title {
+  font-family: var(--font-ui);
+  font-weight: var(--w-extrabold);
+  font-size: 24px;
+  margin: 0 0 var(--space-2);
+}
+
+.label {
+  display: block;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-1);
+}
+
+/* ---- Card (glass surface) ---- */
+.card {
+  width: min(var(--max-card), 92vw);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  padding: var(--space-3);
+}
+
+/* ---- Inputs ---- */
+.input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-primary);
+  font-size: var(--text-input);
+  font-weight: var(--w-medium);
+  outline: none;
+}
+
+.input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.input:focus {
+  border-color: rgba(0, 194, 255, 0.55);
+  box-shadow: var(--focus-ring);
+}
+
+/* ---- Links ---- */
+.link {
+  color: var(--color-accent);
+  text-decoration: none;
+  font-weight: var(--w-medium);
+}
+
+.link:hover { text-decoration: underline; }
+
+/* ---- Meta text ---- */
+.meta {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  display: grid;
+  gap: var(--space-1);
+}
+
+/* ---- Button ---- */
+.button {
+  width: 100%;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--color-text-primary);
+  font-size: var(--text-button);
+  font-weight: var(--w-semibold);
+  cursor: pointer;
+}
+
+.button:hover { background: rgba(255, 255, 255, 0.16); }
+.button:active { transform: translateY(1px); }
+
+/* ---- Small helper text ---- */
+.small {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.35;
+}
