@@ -44,5 +44,33 @@
         </section>
       </div>
     </main>
+    <script type="module">
+      import { login } from "../js/auth.js";
+      import { $, setLoading, showError, clearError } from "../js/ui.js";
+
+      const emailEl = $("#email");
+      const passwordEl = $("#password");
+      const btn = document.querySelector(".button");
+      const errorEl = $("#error");
+
+      btn.addEventListener("click", async () => {
+        clearError(errorEl);
+        setLoading(btn, true);
+
+        try {
+          await login({
+            email: emailEl.value.trim(),
+            password: passwordEl.value,
+          });
+
+
+          window.location.href = "./login.html";
+        } catch (err) {
+          showError(errorEl, err.message);
+        } finally {
+          setLoading(btn, false);
+        }
+      });
+    </script>
   </body>
 </html>

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Donee — Enter Code</title>
+    <link rel="stylesheet" href="../css/tokens.css" />
+    <link rel="stylesheet" href="../css/components.css" />
+  </head>
+
+  <body>
+    <div class="bg"></div>
+
+    <main class="page">
+      <div class="stack">
+        <h1 class="brand-title">DONEE</h1>
+
+        <section class="card" aria-label="Enter reset code form">
+          <h2 class="card-title">Reset password</h2>
+
+          <p id="error" class="small" style="display:none; color: var(--color-danger);"></p>
+
+          <form class="stack">
+            <div>
+              <label class="label" for="code">Code</label>
+              <input
+                class="input"
+                id="code"
+                name="code"
+                type="text"
+                placeholder="000000"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+              />
+            </div>
+
+            <div class="small">
+              Enter the 6-digit code we sent to your email.
+            </div>
+
+            <button class="button" type="button">Continue</button>
+
+            <div class="meta">
+              <a class="link" href="./forgot_password.html">Change email</a>
+            </div>
+          </form>
+        </section>
+      </div>
+    </main>
+
+    <script type="module">
+      import { verifyResetCode } from "../js/auth.js";
+      import { $, setLoading, showError, clearError } from "../js/ui.js";
+
+      const codeEl = $("#code");
+      const btn = document.querySelector(".button");
+      const errorEl = $("#error");
+      const email = sessionStorage.getItem("donee_reset_email");
+      if (!email) {
+        window.location.href = "./forgot_password.html";
+      }
+
+      const savedCode = sessionStorage.getItem("donee_reset_code");
+      if (savedCode) codeEl.value = savedCode;
+
+      btn.addEventListener("click", async () => {
+        clearError(errorEl);
+        setLoading(btn, true);
+
+        try {
+          const code = codeEl.value.trim();
+
+          if (!/^\d{6}$/.test(code)) {
+            showError(errorEl, "Please enter a valid 6-digit code.");
+            return;
+          }
+
+          await verifyResetCode({ email, code });
+
+          sessionStorage.setItem("donee_reset_code", code);
+
+          window.location.href = "./reset_password.html";
+        } catch (err) {
+          showError(errorEl, err.message);
+        } finally {
+          setLoading(btn, false);
+        }
+      });
+    </script>
+  </body>
+</html>

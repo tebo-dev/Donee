@@ -53,5 +53,42 @@
         </section>
       </div>
     </main>
+    <script type="module">
+      import { register } from "../js/auth.js";
+      import { $, setLoading, showError, clearError } from "../js/ui.js";
+
+      const usernameEl = $("#username");
+      const emailEl = $("#email");
+      const passwordEl = $("#password");
+      const confirmEl = $("#confirm_password");
+      const btn = document.querySelector(".button");
+      const errorEl = $("#error");
+
+      btn.addEventListener("click", async () => {
+        clearError(errorEl);
+
+        const username = usernameEl.value.trim();
+        const email = emailEl.value.trim();
+        const password = passwordEl.value;
+        const confirm = confirmEl.value;
+
+        if (password !== confirm) {
+          showError(errorEl, "Passwords do not match.");
+          return;
+        }
+
+        setLoading(btn, true);
+
+        try {
+          await register({ username, email, password });
+
+          window.location.href = "./login.html";
+        } catch (err) {
+          showError(errorEl, err.message);
+        } finally {
+          setLoading(btn, false);
+        }
+      });
+    </script>
   </body>
 </html>
