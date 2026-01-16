@@ -158,3 +158,15 @@ body {
   color: var(--color-text-secondary);
   line-height: 1.35;
 }
+
+/* ---- Error box ---- */
+
+.error-box {
+  display: none;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 77, 77, 0.35);
+  background: rgba(255, 77, 77, 0.10);
+  color: var(--color-danger);
+  white-space: pre-line;
+}
