@@ -42,7 +42,7 @@ def verify_reset_code(payload: VerifyResetCodeRequest, db: Session = Depends(get
 
     try:
         verify_reset_code_service(db, payload)
-        return {"message": "Code is valid"}
+        return {"message": "Code is valid."}
     except ValueError as error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)

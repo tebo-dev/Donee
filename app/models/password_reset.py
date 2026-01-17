@@ -1,10 +1,9 @@
 """Import the necessary libraries to create the password reset model."""
 
 from datetime import datetime
-from uuid import UUID
+from uuid import UUID, uuid4
 
-import sqlalchemy as sa
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -19,7 +18,7 @@ class PasswordResetToken(Base):
     id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         primary_key=True,
-        server_default=sa.text("gen_random_uuid()"),
+        default=uuid4,
         nullable=False,
     )
 
@@ -36,7 +35,7 @@ class PasswordResetToken(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        server_default=sa.text("now()"),
+        server_default=func.now(),
         nullable=False,
     )
 

@@ -26,6 +26,14 @@ def gen_random_code() -> str:
     return f"{randbelow(1_000_000):06d}"
 
 
+def normalize_utc(dt: datetime) -> datetime:
+    """Ensure DB datetime is timezone-aware UTC."""
+
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
 def get_latest_token_for_user(db: Session, user_id: UUID) -> PasswordResetToken | None:
     """Get the latest reset token for a user."""
 
@@ -81,7 +89,7 @@ def verify_reset_code_service(db: Session, payload: VerifyResetCodeRequest) -> b
     if not token:
         raise ValueError("Invalid code.")
 
-    if token.expires_at < datetime.now(timezone.utc):
+    if normalize_utc(token.expires_at) < datetime.now(timezone.utc):
         raise ValueError("Code expired.")
 
     if not verify_reset_code_hash(payload.code, token.code_hash):
@@ -101,7 +109,7 @@ def reset_password_service(db: Session, payload: ResetPasswordRequest) -> None:
     if not token:
         raise ValueError("Invalid code.")
 
-    if token.expires_at < datetime.now(timezone.utc):
+    if normalize_utc(token.expires_at) < datetime.now(timezone.utc):
         raise ValueError("Code expired.")
 
     if not verify_reset_code_hash(payload.code, token.code_hash):
