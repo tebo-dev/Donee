@@ -3,6 +3,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.domain_errors import ExistingEmail, InvalidCredentials, UsernameTaken
 from app.core.jwt_handler import create_access_token
 from app.core.security import hash_password, verify_password
 from app.models.user import User
@@ -32,10 +33,10 @@ def register_user(db: Session, user_create: UserCreate) -> User:
     """Create a new user."""
 
     if get_user_by_email(db, user_create.email):
-        raise ValueError("Email already registered.")
+        raise ExistingEmail()
 
     if get_user_by_username(db, user_create.username):
-        raise ValueError("Username already taken.")
+        raise UsernameTaken()
 
     hashed = hash_password(user_create.password)
 
@@ -76,7 +77,7 @@ def login_user(db: Session, email: str, password: str) -> Token:
     user = authenticate_user(db, email, password)
 
     if not user:
-        raise ValueError("Invalid credentials.")
+        raise InvalidCredentials()
 
     token = create_access_token({"sub": str(user.id)})
 

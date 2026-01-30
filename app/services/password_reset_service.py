@@ -7,6 +7,7 @@ from uuid import UUID
 from sqlalchemy import delete, desc, select
 from sqlalchemy.orm import Session
 
+from app.core.domain_errors import InvalidCode, NotFound
 from app.core.security import hash_password, hash_reset_code
 from app.core.security import verify_reset_code as verify_reset_code_hash
 from app.models.password_reset import PasswordResetToken
@@ -60,7 +61,7 @@ def request_password_reset(db: Session, payload: ForgotPasswordRequest) -> str:
 
     user = get_user_by_email(db, payload.email)
     if not user:
-        raise ValueError("User not found.")
+        raise NotFound()
 
     code = gen_random_code()
     code_hash = hash_reset_code(code)
@@ -83,17 +84,17 @@ def verify_reset_code_service(db: Session, payload: VerifyResetCodeRequest) -> b
 
     user = get_user_by_email(db, payload.email)
     if not user:
-        raise ValueError("Invalid code.")
+        raise InvalidCode()
 
     token = get_latest_token_for_user(db, user.id)
     if not token:
-        raise ValueError("Invalid code.")
+        raise InvalidCode()
 
     if normalize_utc(token.expires_at) < datetime.now(timezone.utc):
-        raise ValueError("Code expired.")
+        raise InvalidCode()
 
     if not verify_reset_code_hash(payload.code, token.code_hash):
-        raise ValueError("Invalid code.")
+        raise InvalidCode()
 
     return True
 
@@ -103,17 +104,17 @@ def reset_password_service(db: Session, payload: ResetPasswordRequest) -> None:
 
     user = get_user_by_email(db, payload.email)
     if not user:
-        raise ValueError("Invalid code.")
+        raise InvalidCode()
 
     token = get_latest_token_for_user(db, user.id)
     if not token:
-        raise ValueError("Invalid code.")
+        raise InvalidCode()
 
     if normalize_utc(token.expires_at) < datetime.now(timezone.utc):
-        raise ValueError("Code expired.")
+        raise InvalidCode()
 
     if not verify_reset_code_hash(payload.code, token.code_hash):
-        raise ValueError("Invalid code.")
+        raise InvalidCode()
 
     user.password_hash = hash_password(payload.new_password)
 
