@@ -1,6 +1,6 @@
 """Import necessary libraries for endpoints creation."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
@@ -16,27 +16,15 @@ router = APIRouter(tags=["auth"])
 def register(payload: UserCreate, db: Session = Depends(get_db)):
     """Register user."""
 
-    try:
-        user = register_user(db, payload)
-        return user
-    except ValueError as error:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)
-        ) from error
+    user = register_user(db, payload)
+    return user
 
 
 @router.post("/login", response_model=Token)
 def login(payload: UserLogin, db: Session = Depends(get_db)):
     """Log In user."""
 
-    try:
-        return login_user(db, payload.email, payload.password)
-    except ValueError as error:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials.",
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from error
+    return login_user(db, payload.email, payload.password)
 
 
 @router.get("/me", response_model=UserOut)

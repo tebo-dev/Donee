@@ -1,6 +1,6 @@
 """Import necessary libraries for endpoints creation."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -23,40 +23,25 @@ router = APIRouter(tags=["auth"])
 def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db)):
     """Send password reset code."""
 
-    try:
-        code = request_password_reset(db, payload)
+    code = request_password_reset(db, payload)
 
-        if settings.ENVIRONMENT == "development":
-            return {"message": "Reset code sent", "debug_code": code}
+    if settings.ENVIRONMENT == "development":
+        return {"message": "Reset code sent", "debug_code": code}
 
-        return {"message": "Reset code sent"}
-    except ValueError as error:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)
-        ) from error
+    return {"message": "Reset code sent"}
 
 
 @router.post("/verify-reset-code")
 def verify_reset_code(payload: VerifyResetCodeRequest, db: Session = Depends(get_db)):
     """Verify password reset code."""
 
-    try:
-        verify_reset_code_service(db, payload)
-        return {"message": "Code is valid."}
-    except ValueError as error:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)
-        ) from error
+    verify_reset_code_service(db, payload)
+    return {"message": "Code is valid."}
 
 
 @router.post("/reset-password")
 def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)):
     """Reset user password."""
 
-    try:
-        reset_password_service(db, payload)
-        return {"message": "Password updated successfully"}
-    except ValueError as error:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)
-        ) from error
+    reset_password_service(db, payload)
+    return {"message": "Password updated successfully"}
