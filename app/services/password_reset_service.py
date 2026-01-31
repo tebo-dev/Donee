@@ -7,7 +7,7 @@ from uuid import UUID
 from sqlalchemy import delete, desc, select
 from sqlalchemy.orm import Session
 
-from app.core.domain_errors import InvalidCode, NotFound
+from app.core.domain_errors import InvalidCode
 from app.core.security import hash_password, hash_reset_code
 from app.core.security import verify_reset_code as verify_reset_code_hash
 from app.models.password_reset import PasswordResetToken
@@ -61,7 +61,7 @@ def request_password_reset(db: Session, payload: ForgotPasswordRequest) -> str:
 
     user = get_user_by_email(db, payload.email)
     if not user:
-        raise NotFound()
+        return None
 
     code = gen_random_code()
     code_hash = hash_reset_code(code)
