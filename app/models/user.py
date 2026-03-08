@@ -59,5 +59,16 @@ class User(Base):
     )
 
     reset_tokens = relationship(
-        "PasswordResetToken", back_populates="user", cascade="all, delete-orphan"
+        "PasswordResetToken",
+        foreign_keys="PasswordResetToken.user_id",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    assigned_tasks = relationship(
+        "Task", foreign_keys="Task.assignee_id", back_populates="assignee"
+    )
+
+    created_tasks = relationship(
+        "Task", foreign_keys="Task.created_by", back_populates="creator"
     )
