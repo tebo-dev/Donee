@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.domain_errors import ExistingEmail, InvalidCredentials, UsernameTaken
 from app.core.jwt_handler import create_access_token
 from app.core.security import hash_password, verify_password
-from app.models.user import User
+from app.models.auth.user import User
 from app.schemas.user import Token, UserCreate
 
 # Helpers
