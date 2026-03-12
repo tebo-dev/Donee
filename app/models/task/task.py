@@ -119,6 +119,8 @@ class Task(Base):
         ),
     )
 
+    # Foreign key constraints:
+
     assignee = relationship(
         "User", foreign_keys=[assignee_id], back_populates="assigned_tasks"
     )
@@ -129,6 +131,22 @@ class Task(Base):
 
     parent = relationship("Task", remote_side=[id], back_populates="subtasks")
 
+    # Referenced by:
+
     subtasks = relationship(
         "Task", back_populates="parent", cascade="all, delete-orphan"
+    )
+
+    task_attachments = relationship(
+        "Attachment",
+        foreign_keys="Attachment.task_id",
+        back_populates="task",
+        cascade="all, delete-orphan",
+    )
+
+    task_comments = relationship(
+        "Comment",
+        foreign_keys="Comment.task_id",
+        back_populates="task",
+        cascade="all, delete-orphan",
     )
