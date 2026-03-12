@@ -58,6 +58,8 @@ class User(Base):
         nullable=False,
     )
 
+    # Referenced by:
+
     reset_tokens = relationship(
         "PasswordResetToken",
         foreign_keys="PasswordResetToken.user_id",
@@ -66,9 +68,29 @@ class User(Base):
     )
 
     assigned_tasks = relationship(
-        "Task", foreign_keys="Task.assignee_id", back_populates="assignee"
+        "Task",
+        foreign_keys="Task.assignee_id",
+        back_populates="assignee",
+        cascade="all, delete-orphan",
     )
 
     created_tasks = relationship(
-        "Task", foreign_keys="Task.created_by", back_populates="creator"
+        "Task",
+        foreign_keys="Task.created_by",
+        back_populates="creator",
+        cascade="all, delete-orphan",
+    )
+
+    attachments_uploaded = relationship(
+        "Attachment",
+        foreign_keys="Attachment.uploader_id",
+        back_populates="uploader",
+        cascade="all, delete-orphan",
+    )
+
+    comments_posted = relationship(
+        "Comment",
+        foreign_keys="Comment.author_id",
+        back_populates="author",
+        cascade="all, delete-orphan",
     )
