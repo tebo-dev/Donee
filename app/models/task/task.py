@@ -150,3 +150,17 @@ class Task(Base):
         back_populates="task",
         cascade="all, delete-orphan",
     )
+
+    task_reminders = relationship(
+        "Reminder",
+        foreign_keys="Reminder.task_id",
+        back_populates="task",
+        cascade="all, delete-orphan",
+    )
+
+    task_tags = relationship(
+        "TaskTag",
+        foreign_keys="TaskTag.task_id",
+        back_populates="task",
+        cascade="all, delete-orphan",
+    )

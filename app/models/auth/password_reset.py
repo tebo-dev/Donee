@@ -44,4 +44,6 @@ class PasswordResetToken(Base):
         nullable=False,
     )
 
+    # Foreign key constraints:
+
     user = relationship("User", back_populates="reset_tokens", foreign_keys=[user_id])
