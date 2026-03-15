@@ -94,3 +94,17 @@ class User(Base):
         back_populates="author",
         cascade="all, delete-orphan",
     )
+
+    workspaces_owned = relationship(
+        "Workspace",
+        foreign_keys="Workspace.owner_id",
+        back_populates="owner",
+        cascade="all, delete-orphan",
+    )
+
+    workspace_member = relationship(
+        "WorkspaceMember",
+        foreign_keys="WorkspaceMember.user_id",
+        back_populates="member",
+        cascade="all, delete-orphan",
+    )
