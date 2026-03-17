@@ -11,7 +11,7 @@ from app.core.domain_errors import InvalidCode
 from app.core.security import hash_password, hash_reset_code
 from app.core.security import verify_reset_code as verify_reset_code_hash
 from app.models.auth.password_reset import PasswordResetToken
-from app.schemas.password_reset import (
+from app.schemas.auth.password_reset import (
     ForgotPasswordRequest,
     ResetPasswordRequest,
     VerifyResetCodeRequest,

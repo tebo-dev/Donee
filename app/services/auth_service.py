@@ -7,7 +7,7 @@ from app.core.domain_errors import ExistingEmail, InvalidCredentials, UsernameTa
 from app.core.jwt_handler import create_access_token
 from app.core.security import hash_password, verify_password
 from app.models.auth.user import User
-from app.schemas.user import Token, UserCreate
+from app.schemas.auth.user import Token, UserCreate
 
 # Helpers
 
