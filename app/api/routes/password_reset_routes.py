@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.db.session import get_db
-from app.schemas.password_reset import (
+from app.schemas.auth.password_reset import (
     ForgotPasswordRequest,
     ResetPasswordRequest,
     VerifyResetCodeRequest,
