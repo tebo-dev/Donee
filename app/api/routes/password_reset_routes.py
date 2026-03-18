@@ -10,7 +10,7 @@ from app.schemas.auth.password_reset import (
     ResetPasswordRequest,
     VerifyResetCodeRequest,
 )
-from app.services.password_reset_service import (
+from app.services.auth.password_reset_service import (
     request_password_reset,
     reset_password_service,
     verify_reset_code_service,

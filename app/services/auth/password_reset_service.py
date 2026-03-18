@@ -16,7 +16,7 @@ from app.schemas.auth.password_reset import (
     ResetPasswordRequest,
     VerifyResetCodeRequest,
 )
-from app.services.auth_service import get_user_by_email
+from app.services.auth.auth_service import get_user_by_email
 
 # Helpers
 
