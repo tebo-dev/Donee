@@ -29,10 +29,10 @@ Donee follows a layered backend architecture:
 
 This separation ensures:
 
-- Maintainability  
-- Scalability  
-- Clear responsibility boundaries  
-- Testability  
+- Maintainability
+- Scalability
+- Clear responsibility boundaries
+- Testability
 
 Development is done using a **vertical slice approach**:
 
@@ -69,7 +69,7 @@ Development is done using a **vertical slice approach**:
 
 ## 📌 Status
 
-The project is currently in active development.  
+The project is currently in active development.
 Features and structure may evolve as the system matures.
 
 ---

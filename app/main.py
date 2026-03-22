@@ -6,14 +6,14 @@ from fastapi.responses import JSONResponse
 
 from app.api.routes.auth_routes import router as auth_routher
 from app.api.routes.password_reset_routes import router as password_reset_router
-from app.core.domain_errors import (
-    DomainError,
+from app.core.domain_errors.auth_domain_errors import (
     ExistingEmail,
     InvalidCode,
     InvalidCredentials,
     NotFound,
     UsernameTaken,
 )
+from app.core.domain_errors.base import DomainError
 
 app = FastAPI(
     title="Donee API",
