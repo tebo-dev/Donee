@@ -2,6 +2,7 @@
 
 from uuid import UUID
 
+from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -15,12 +16,14 @@ class TaskTag(Base):
 
     task_id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
+        ForeignKey("tasks.id", ondelete="CASCADE"),
         primary_key=True,
         nullable=False,
     )
 
     tag_id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
+        ForeignKey("tags.id", ondelete="CASCADE"),
         primary_key=True,
         nullable=False,
     )

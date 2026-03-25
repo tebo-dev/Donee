@@ -49,7 +49,10 @@ class Task(Base):
         Text,
     )
 
-    status: Mapped[str] = mapped_column(String(11), server_default=sa.text("to do"))
+    status: Mapped[str] = mapped_column(
+        String(11),
+        server_default=sa.text("to do"),
+    )
 
     priority: Mapped[int] = mapped_column(
         SmallInteger(),
