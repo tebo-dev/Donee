@@ -12,6 +12,7 @@ from app.core.jwt_handler import create_access_token
 from app.core.security import hash_password, verify_password
 from app.models.auth.user import User
 from app.schemas.auth.user import Token, UserCreate
+from app.services.workspace.workspace_service import create_default_workspace_for_user
 
 # Helpers
 
@@ -52,6 +53,10 @@ def register_user(db: Session, user_create: UserCreate) -> User:
     )
 
     db.add(user)
+    db.flush()
+
+    create_default_workspace_for_user(db, user.id)
+
     db.commit()
     db.refresh(user)
 

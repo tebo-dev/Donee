@@ -14,6 +14,11 @@ from app.core.domain_errors.auth_domain_errors import (
     UsernameTaken,
 )
 from app.core.domain_errors.base import DomainError
+from app.core.domain_errors.workspace_domain_errors import (
+    ExistingWorkspaceName,
+    NotOwned,
+    WorkspaceNotFound,
+)
 
 app = FastAPI(
     title="Donee API",
@@ -39,6 +44,8 @@ async def domain_error_handler(request: Request, exc: DomainError):
     status_code = status.HTTP_400_BAD_REQUEST
     detail = "Bad request."
 
+    # Auth Domain Errors:
+
     if isinstance(exc, ExistingEmail):
         detail = "Email already registered."
         status_code = status.HTTP_409_CONFLICT
@@ -58,5 +65,19 @@ async def domain_error_handler(request: Request, exc: DomainError):
     elif isinstance(exc, InvalidCode):
         detail = "Code is invalid or expired."
         status_code = status.HTTP_400_BAD_REQUEST
+
+    # Workspace Domain Errors:
+
+    elif isinstance(exc, ExistingWorkspaceName):
+        detail = "Workspace name already taken."
+        status_code = status.HTTP_409_CONFLICT
+
+    elif isinstance(exc, NotOwned):
+        detail = "Workspace not owned."
+        status_code = status.HTTP_403_FORBIDDEN
+
+    elif isinstance(exc, WorkspaceNotFound):
+        detail = "Workspace not found."
+        status_code = status.HTTP_404_NOT_FOUND
 
     return JSONResponse(status_code=status_code, content={"detail": detail})

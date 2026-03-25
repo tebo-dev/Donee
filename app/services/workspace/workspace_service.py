@@ -49,13 +49,15 @@ def create_workspace(db: Session, user_id: UUID, workspace_data: WorkspaceCreati
         name=workspace_data.name,
     )
 
+    db.add(new_workspace)
+    db.flush()
+
     workspace_owner = WorkspaceMember(
         workspace_id=new_workspace.id,
         user_id=user_id,
         role="owner",
     )
 
-    db.add(new_workspace)
     db.add(workspace_owner)
     db.commit()
     db.refresh(new_workspace)
