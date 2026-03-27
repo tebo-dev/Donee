@@ -12,7 +12,11 @@ from app.core.domain_errors.workspace_domain_errors import (
 )
 from app.models.workspace.workspace import Workspace
 from app.models.workspace.workspace_member import WorkspaceMember
-from app.schemas.workspace.workspace import WorkspaceCreation, WorkspaceUpdate
+from app.schemas.workspace.workspace import (
+    WorkspaceCreation,
+    WorkspaceListOut,
+    WorkspaceUpdate,
+)
 
 # Helpers
 
@@ -92,7 +96,7 @@ def get_user_workspaces(db: Session, user_id: UUID):
         .all()
     )
 
-    return user_workspaces
+    return WorkspaceListOut(workspaces=user_workspaces)
 
 
 def get_workspace_for_user(db: Session, workspace_id: UUID, user_id: UUID):
