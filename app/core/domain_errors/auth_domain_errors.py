@@ -1,8 +1,6 @@
-"""Implement domain errors for better exception handling."""
+"""Implement auth domain errors for better exception handling."""
 
-
-class DomainError(Exception):
-    """Base class for domain-level errors."""
+from app.core.domain_errors.base import DomainError
 
 
 class ExistingEmail(DomainError):

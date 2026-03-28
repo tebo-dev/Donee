@@ -50,7 +50,9 @@ class Comment(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    __table_args__ = Index("idx_comments_task_id_created_at", "task_id", "created_at")
+    __table_args__ = (
+        Index("idx_comments_task_id_created_at", "task_id", "created_at"),
+    )
 
     # Foreign key constraints:
 

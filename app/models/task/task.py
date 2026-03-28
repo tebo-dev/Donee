@@ -35,10 +35,10 @@ class Task(Base):
         nullable=False,
     )
 
-    project_id: Mapped[UUID] = mapped_column(
-        PG_UUID(as_uuid=True),
-        ForeignKey("projects.id", ondelete="CASCADE"),
-    )
+    # project_id: Mapped[UUID] = mapped_column(
+    #    PG_UUID(as_uuid=True),
+    #    ForeignKey("projects.id", ondelete="CASCADE"),
+    # )
 
     title: Mapped[str] = mapped_column(
         String(80),
@@ -49,7 +49,10 @@ class Task(Base):
         Text,
     )
 
-    status: Mapped[str] = mapped_column(String(11), server_default=sa.text("to do"))
+    status: Mapped[str] = mapped_column(
+        String(11),
+        server_default="to do",
+    )
 
     priority: Mapped[int] = mapped_column(
         SmallInteger(),
@@ -111,7 +114,7 @@ class Task(Base):
 
     __table_args__ = (
         Index("idx_tasks_assignee_id_status", "assignee_id", "status"),
-        Index("idx_tasks_project_id_status", "project_id", "status"),
+        # Index("idx_tasks_project_id_status", "project_id", "status"),
         CheckConstraint(
             """status IN ('to do', 'in_progress', 'blocked', 'done',
             'archived')""",

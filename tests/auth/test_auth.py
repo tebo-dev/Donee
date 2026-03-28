@@ -1,24 +1,6 @@
 """Auth Tests."""
 
-# Helpers
-
-
-def register_user(
-    client, email="test@donee.com", username="testuser", password="12345678"
-):
-    """Register user in tests db."""
-
-    return client.post(
-        "/auth/register",
-        json={"email": email, "username": username, "password": password},
-    )
-
-
-def login_user(client, email="test@donee.com", password="12345678"):
-    """Login user registered in tests db."""
-
-    return client.post("/auth/login", json={"email": email, "password": password})
-
+from tests.utils import login_user, register_user
 
 # Auth tests
 
@@ -44,7 +26,7 @@ def test_register_fails_if_email_exists(client):
     assert res1.status_code in (200, 201)
 
     res2 = register_user(client)
-    assert res2.status_code == 400
+    assert res2.status_code == 409
     assert res2.json().get("detail") == "Email already registered."
 
 
