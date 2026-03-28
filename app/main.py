@@ -17,7 +17,7 @@ from app.core.domain_errors.auth_domain_errors import (
 from app.core.domain_errors.base import DomainError
 from app.core.domain_errors.workspace_domain_errors import (
     ExistingWorkspaceName,
-    NotOwned,
+    NotAuthorized,
     WorkspaceNotFound,
 )
 
@@ -74,8 +74,8 @@ async def domain_error_handler(request: Request, exc: DomainError):
         detail = "Workspace name already taken."
         status_code = status.HTTP_409_CONFLICT
 
-    elif isinstance(exc, NotOwned):
-        detail = "Workspace not owned."
+    elif isinstance(exc, NotAuthorized):
+        detail = "No authorized."
         status_code = status.HTTP_403_FORBIDDEN
 
     elif isinstance(exc, WorkspaceNotFound):

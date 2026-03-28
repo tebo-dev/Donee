@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.domain_errors.workspace_domain_errors import (
     ExistingWorkspaceName,
-    NotOwned,
+    NotAuthorized,
     WorkspaceNotFound,
 )
 from app.models.workspace.workspace import Workspace
@@ -40,6 +40,20 @@ def get_workspace_by_id(db: Session, workspace_id: UUID):
 
 
 # Main service
+
+
+def user_has_access(db: Session, user_id: UUID, workspace_id: UUID):
+    """Verify if a specific user has access to a workspace"""
+
+    stmt = select(WorkspaceMember).where(
+        WorkspaceMember.workspace_id == workspace_id, WorkspaceMember.user_id == user_id
+    )
+    record = db.execute(stmt).scalars().first()
+
+    if record:
+        return True
+
+    return False
 
 
 def create_workspace(db: Session, user_id: UUID, workspace_data: WorkspaceCreation):
@@ -103,11 +117,12 @@ def get_workspace_for_user(db: Session, workspace_id: UUID, user_id: UUID):
     """Get specific workspace of an user."""
 
     workspace = get_workspace_by_id(db, workspace_id)
+    has_access = user_has_access(db, user_id, workspace_id)
 
     if not workspace:
         raise WorkspaceNotFound()
-    if workspace.owner_id != user_id:
-        raise NotOwned()
+    if has_access is False:
+        raise NotAuthorized()
 
     return workspace
 
@@ -120,24 +135,10 @@ def rename_workspace(
     workspace = get_workspace_by_id(db, workspace_id)
 
     if workspace.owner_id != user_id:
-        raise NotOwned()
+        raise NotAuthorized()
     if get_workspace_by_name(db, user_id, update.name):
         raise ExistingWorkspaceName()
 
     workspace.name = update.name
 
     db.commit()
-
-
-def user_has_access(db: Session, user_id: UUID, workspace_id: UUID):
-    """Verify if a specific user has access to a workspace"""
-
-    stmt = select(WorkspaceMember).where(
-        WorkspaceMember.workspace_id == workspace_id, WorkspaceMember.user_id == user_id
-    )
-    record = db.execute(stmt).scalars().first()
-
-    if record:
-        return True
-
-    return False

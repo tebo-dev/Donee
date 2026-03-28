@@ -7,8 +7,8 @@ class ExistingWorkspaceName(DomainError):
     """Used when creating a workspace with the name of an existing one."""
 
 
-class NotOwned(DomainError):
-    """Used when an users tries to edit a not-owned workspace"""
+class NotAuthorized(DomainError):
+    """Used when an users tries to edit a workspace without authorization."""
 
 
 class WorkspaceNotFound(DomainError):
