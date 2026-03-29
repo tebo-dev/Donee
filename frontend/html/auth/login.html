@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Donee — Login</title>
-    <link rel="stylesheet" href="../css/tokens.css" />
-    <link rel="stylesheet" href="../css/components.css" />
+    <link rel="stylesheet" href="../../css/tokens.css" />
+    <link rel="stylesheet" href="../../css/components.css" />
   </head>
 
   <body>
@@ -45,8 +45,8 @@
       </div>
     </main>
     <script type="module">
-      import { login } from "../js/auth.js";
-      import { $, setLoading, showError, clearError } from "../js/ui.js";
+      import { login } from "../../js/auth.js";
+      import { $, setLoading, showError, clearError } from "../../js/ui.js";
 
       const emailEl = $("#email");
       const passwordEl = $("#password");
@@ -63,8 +63,7 @@
             password: passwordEl.value,
           });
 
-
-          window.location.href = "./login.html";
+          window.location.href = "../workspace/workspace_home.html";
         } catch (err) {
           showError(errorEl, err.message);
         } finally {
