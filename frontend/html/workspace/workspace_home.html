@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Donee — Workspace</title>
+
+    <link rel="stylesheet" href="../../css/tokens.css" />
+    <link rel="stylesheet" href="../../css/components.css" />
+    <link rel="stylesheet" href="../../css/workspace.css" />
+  </head>
+  <body class="workspace-page">
+    <div class="bg"></div>
+
+    <main class="workspace-shell">
+      <aside class="workspace-sidebar" id="workspaceSidebar"></aside>
+
+      <section class="workspace-main">
+        <header class="workspace-topbar">
+          <div class="workspace-title-wrap">
+            <p class="workspace-kicker">Current workspace</p>
+
+            <button
+              id="workspaceTitleTrigger"
+              class="workspace-title-button"
+              type="button"
+              aria-label="Open workspace manager"
+            >
+              <h1 class="workspace-title" id="workspacePageTitle">Loading...</h1>
+            </button>
+
+            <p class="workspace-title-sub" id="workspacePageMeta">
+              Preparing workspace context.
+            </p>
+          </div>
+
+          <div class="workspace-topbar-actions">
+            <button
+              id="workspaceSettingsBtn"
+              class="workspace-icon-btn"
+              type="button"
+              aria-label="Open workspace settings"
+              title="Workspace settings"
+            >
+              ⚙
+            </button>
+          </div>
+        </header>
+
+        <div id="pageFeedback" class="workspace-feedback"></div>
+
+        <section id="workspaceEmptyState" class="workspace-empty">
+          <h3>No workspace available</h3>
+          <p>
+            This account does not have a workspace ready yet. Create one from the
+            workspace manager to continue.
+          </p>
+        </section>
+
+        <section id="workspaceOverviewPanel" class="workspace-panel workspace-overview">
+          <div class="workspace-minimap">
+            <h2 class="workspace-minimap-title" id="workspaceMinimapName">Workspace</h2>
+
+            <div class="workspace-tree">
+              <div class="workspace-tree-group">
+                <span class="workspace-tree-label">Navigation</span>
+                <div class="workspace-tree-item">All Tasks</div>
+                <div class="workspace-tree-item">No Project</div>
+                <div class="workspace-tree-item">Project A</div>
+                <div class="workspace-tree-item">Project B</div>
+              </div>
+
+              <div class="workspace-tree-group">
+                <span class="workspace-tree-label">Quick actions</span>
+                <div class="workspace-tree-item">+ New Project</div>
+                <div class="workspace-tree-item">+ New Task</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="workspace-overview-body">
+            <div class="workspace-filter-row">
+              <div>
+                <h2 class="workspace-section-title">Workspace overview</h2>
+                <p class="workspace-section-copy">
+                  This layout follows the structure of your hand-drawn mockup:
+                  visible workspace name, side minimap, filters at the top and
+                  large action areas for the next slices.
+                </p>
+              </div>
+
+              <div class="workspace-filter-pills">
+                <span class="workspace-pill active">All</span>
+                <span class="workspace-pill">Projects</span>
+                <span class="workspace-pill">Tasks</span>
+                <span class="workspace-pill">Tags</span>
+              </div>
+            </div>
+
+            <div class="workspace-action-grid">
+              <div class="workspace-action-card">
+                <button id="createProjectBtn" class="workspace-create-btn" type="button">
+                  <div class="workspace-create-btn-content">
+                    <span class="workspace-plus">＋</span>
+                    <span class="workspace-create-label">New Project</span>
+                  </div>
+                </button>
+              </div>
+
+              <div class="workspace-action-card">
+                <button id="createTaskBtn" class="workspace-create-btn" type="button">
+                  <div class="workspace-create-btn-content">
+                    <span class="workspace-plus">＋</span>
+                    <span class="workspace-create-label">New Task</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <div class="workspace-placeholder-grid">
+              <div class="workspace-placeholder-card">
+                Future task / project cards will appear here for
+                <strong id="workspaceActionWorkspaceName">this workspace</strong>.
+              </div>
+
+              <div class="workspace-placeholder-card">
+                This zone intentionally stays simple during Workspace Foundation.
+              </div>
+
+              <div class="workspace-placeholder-card">
+                Notifications and profile can be implemented later in their own UI.
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script type="module" src="../../js/workspace.js"></script>
+  </body>
+</html>

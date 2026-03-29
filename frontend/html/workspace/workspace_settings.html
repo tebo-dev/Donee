@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Donee — Workspace Manager</title>
+
+    <link rel="stylesheet" href="../../css/tokens.css" />
+    <link rel="stylesheet" href="../../css/components.css" />
+    <link rel="stylesheet" href="../../css/workspace.css" />
+  </head>
+  <body class="workspace-page">
+    <div class="bg"></div>
+
+    <main class="workspace-shell">
+      <aside class="workspace-sidebar" id="workspaceSidebar"></aside>
+
+      <section class="workspace-main">
+        <header class="workspace-topbar">
+          <div class="workspace-title-wrap">
+            <p class="workspace-kicker">Workspace manager</p>
+            <h1 class="workspace-title">Your spaces</h1>
+            <p class="workspace-title-sub">
+              Switch, create and rename workspaces from one place.
+            </p>
+          </div>
+        </header>
+
+        <div id="pageFeedback" class="workspace-feedback"></div>
+
+        <section class="workspace-split">
+          <article class="workspace-form-card">
+            <div class="workspace-form-row">
+              <h2 class="workspace-form-title">Create new workspace</h2>
+              <p class="workspace-form-copy">
+                This follows the second sketch: one clear area to create a new
+                workspace and then move between all the existing ones.
+              </p>
+            </div>
+
+            <form id="createWorkspaceForm" class="stack">
+              <div class="workspace-form-row">
+                <label class="label" for="createWorkspaceName">Workspace name</label>
+                <input
+                  class="input"
+                  id="createWorkspaceName"
+                  name="createWorkspaceName"
+                  type="text"
+                  placeholder="e.g. Design Studio"
+                  maxlength="50"
+                />
+              </div>
+
+              <p id="createError" class="workspace-inline-error"></p>
+
+              <div class="workspace-form-actions">
+                <button id="createWorkspaceBtn" class="button" type="submit">
+                  Create workspace
+                </button>
+                <a class="workspace-ghost-btn" href="./workspace_home.html">
+                  Back to workspace
+                </a>
+              </div>
+            </form>
+          </article>
+
+          <article class="workspace-form-card">
+            <div class="workspace-form-row">
+              <h2 class="workspace-form-title">Rename workspace</h2>
+              <p class="workspace-form-copy">
+                Select a workspace from the list below and update its name here.
+              </p>
+            </div>
+
+            <div class="workspace-rename-block">
+              <span class="workspace-sidebar-label">Selected workspace</span>
+              <strong id="renameCurrentName">Choose one below</strong>
+            </div>
+
+            <form id="renameWorkspaceForm" class="stack">
+              <input id="renameWorkspaceId" type="hidden" />
+
+              <div class="workspace-form-row">
+                <label class="label" for="renameWorkspaceName">New name</label>
+                <input
+                  class="input"
+                  id="renameWorkspaceName"
+                  name="renameWorkspaceName"
+                  type="text"
+                  placeholder="New workspace name"
+                  maxlength="50"
+                />
+              </div>
+
+              <p id="renameError" class="workspace-inline-error"></p>
+
+              <div class="workspace-form-actions">
+                <button id="renameWorkspaceBtn" class="button" type="submit">
+                  Save new name
+                </button>
+              </div>
+            </form>
+          </article>
+        </section>
+
+        <section class="workspace-panel">
+          <div class="workspace-filter-row">
+            <div>
+              <h2 class="workspace-section-title">All workspaces</h2>
+              <p class="workspace-section-copy">
+                Open any workspace, rename it, or move into its configuration page.
+              </p>
+            </div>
+          </div>
+
+          <div id="workspaceListEmpty" class="workspace-empty">
+            <h3>No workspaces found</h3>
+            <p>Create your first workspace to continue.</p>
+          </div>
+
+          <div id="workspaceList" class="workspace-list"></div>
+        </section>
+      </section>
+    </main>
+
+    <script type="module" src="../../js/workspace.js"></script>
+  </body>
+</html>
