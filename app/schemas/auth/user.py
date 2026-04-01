@@ -1,4 +1,4 @@
-"""Import the necessary libraries for user schema creation."""
+"""Import the necessary libraries for user schemas creation."""
 
 from uuid import UUID
 

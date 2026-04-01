@@ -1,4 +1,4 @@
-"""Import necessary libraries for password reset implementation."""
+"""Import necessary libraries for password reset schemas implementation."""
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 

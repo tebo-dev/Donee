@@ -1,4 +1,4 @@
-"""Import the necessary libraries for workspaces implementation."""
+"""Import the necessary libraries for workspaces schemas implementation."""
 
 from datetime import datetime
 from uuid import UUID
