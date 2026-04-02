@@ -64,3 +64,17 @@ class Workspace(Base):
         back_populates="workspace",
         cascade="all, delete-orphan",
     )
+
+    workspace_projects = relationship(
+        "Project",
+        foreign_keys="Project.workspace_id",
+        back_populates="workspace",
+        cascade="all, delete-orphan",
+    )
+
+    workspace_tasks = relationship(
+        "Task",
+        foreign_keys="Task.workspace_id",
+        back_populates="workspace",
+        cascade="all, delete-orphan",
+    )

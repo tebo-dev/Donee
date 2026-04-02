@@ -35,10 +35,15 @@ class Task(Base):
         nullable=False,
     )
 
-    # project_id: Mapped[UUID] = mapped_column(
-    #    PG_UUID(as_uuid=True),
-    #    ForeignKey("projects.id", ondelete="CASCADE"),
-    # )
+    workspace_id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("workspaces.id", ondelete="CASCADE"),
+    )
+
+    project_id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("projects.id", ondelete="CASCADE"),
+    )
 
     title: Mapped[str] = mapped_column(
         String(80),
@@ -114,7 +119,7 @@ class Task(Base):
 
     __table_args__ = (
         Index("idx_tasks_assignee_id_status", "assignee_id", "status"),
-        # Index("idx_tasks_project_id_status", "project_id", "status"),
+        Index("idx_tasks_project_id_status", "project_id", "status"),
         CheckConstraint(
             """status IN ('to do', 'in_progress', 'blocked', 'done',
             'archived')""",
@@ -133,6 +138,12 @@ class Task(Base):
     )
 
     parent = relationship("Task", remote_side=[id], back_populates="subtasks")
+
+    project = relationship("Project", foreign_keys=[project_id], back_populates="tasks")
+
+    workspace = relationship(
+        "Workspace", foreign_keys=[workspace_id], back_populates="workspace_tasks"
+    )
 
     # Referenced by:
 

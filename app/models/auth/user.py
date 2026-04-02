@@ -67,6 +67,27 @@ class User(Base):
         cascade="all, delete-orphan",
     )
 
+    workspaces_owned = relationship(
+        "Workspace",
+        foreign_keys="Workspace.owner_id",
+        back_populates="owner",
+        cascade="all, delete-orphan",
+    )
+
+    workspace_member = relationship(
+        "WorkspaceMember",
+        foreign_keys="WorkspaceMember.user_id",
+        back_populates="member",
+        cascade="all, delete-orphan",
+    )
+
+    created_projects = relationship(
+        "Project",
+        foreign_keys="Project.created_by",
+        back_populates="creator",
+        cascade="all, delete-orphan",
+    )
+
     assigned_tasks = relationship(
         "Task",
         foreign_keys="Task.assignee_id",
@@ -92,19 +113,5 @@ class User(Base):
         "Comment",
         foreign_keys="Comment.author_id",
         back_populates="author",
-        cascade="all, delete-orphan",
-    )
-
-    workspaces_owned = relationship(
-        "Workspace",
-        foreign_keys="Workspace.owner_id",
-        back_populates="owner",
-        cascade="all, delete-orphan",
-    )
-
-    workspace_member = relationship(
-        "WorkspaceMember",
-        foreign_keys="WorkspaceMember.user_id",
-        back_populates="member",
         cascade="all, delete-orphan",
     )
