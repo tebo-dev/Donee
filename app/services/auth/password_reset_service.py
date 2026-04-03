@@ -1,7 +1,6 @@
 """Import necessary libraries for password reset service."""
 
 from datetime import datetime, timedelta, timezone
-from secrets import randbelow
 from uuid import UUID
 
 from sqlalchemy import delete, desc, select
@@ -17,22 +16,10 @@ from app.schemas.auth.password_reset import (
     VerifyResetCodeRequest,
 )
 from app.services.auth.auth_service import get_user_by_email
+from app.utils.codes import gen_random_code
+from app.utils.dates import normalize_utc
 
 # Helpers
-
-
-def gen_random_code() -> str:
-    """Generate a 6-digit numeric code as a string."""
-
-    return f"{randbelow(1_000_000):06d}"
-
-
-def normalize_utc(dt: datetime) -> datetime:
-    """Ensure DB datetime is timezone-aware UTC."""
-
-    if dt.tzinfo is None:
-        return dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc)
 
 
 def get_latest_token_for_user(db: Session, user_id: UUID) -> PasswordResetToken | None:
