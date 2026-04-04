@@ -141,7 +141,7 @@ def update_task(
     return task
 
 
-def delete_task(db: Session, task_id: UUID, user_id: UUID):
+def delete_task(db: Session, task_id: UUID, user_id: UUID) -> None:
     """Delete a task."""
 
     stmt = select(Task).where(Task.id == task_id)

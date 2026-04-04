@@ -21,8 +21,8 @@ from app.schemas.workspace.workspace import (
 # Helpers
 
 
-def get_workspace_by_name(db: Session, user_id: UUID, workspace_name: str):
-    """Get a workspace by its name"""
+def get_workspace_by_name(db: Session, user_id: UUID, workspace_name: str) -> Workspace:
+    """Get a workspace by its name."""
 
     stmt = select(Workspace).where(
         Workspace.owner_id == user_id, Workspace.name == workspace_name
@@ -30,7 +30,7 @@ def get_workspace_by_name(db: Session, user_id: UUID, workspace_name: str):
     return db.execute(stmt).scalars().first()
 
 
-def get_workspace_by_id(db: Session, workspace_id: UUID):
+def get_workspace_by_id(db: Session, workspace_id: UUID) -> Workspace:
     """Get a workspace by its id."""
 
     stmt = select(Workspace).where(Workspace.id == workspace_id)
@@ -42,8 +42,8 @@ def get_workspace_by_id(db: Session, workspace_id: UUID):
 # Main service
 
 
-def user_has_access(db: Session, user_id: UUID, workspace_id: UUID):
-    """Verify if a specific user has access to a workspace"""
+def user_has_access(db: Session, user_id: UUID, workspace_id: UUID) -> bool:
+    """Verify if a specific user has access to a workspace."""
 
     stmt = select(WorkspaceMember).where(
         WorkspaceMember.workspace_id == workspace_id, WorkspaceMember.user_id == user_id
@@ -56,7 +56,9 @@ def user_has_access(db: Session, user_id: UUID, workspace_id: UUID):
     return False
 
 
-def create_workspace(db: Session, user_id: UUID, workspace_data: WorkspaceCreation):
+def create_workspace(
+    db: Session, user_id: UUID, workspace_data: WorkspaceCreation
+) -> Workspace:
     """Create a new workspace."""
 
     if get_workspace_by_name(db, user_id, workspace_data.name):
@@ -83,7 +85,7 @@ def create_workspace(db: Session, user_id: UUID, workspace_data: WorkspaceCreati
     return new_workspace
 
 
-def create_default_workspace_for_user(db: Session, user_id: UUID):
+def create_default_workspace_for_user(db: Session, user_id: UUID) -> None:
     """Create a default workspace when a new user registers."""
 
     default_workspace = WorkspaceCreation(
@@ -93,7 +95,7 @@ def create_default_workspace_for_user(db: Session, user_id: UUID):
     create_workspace(db, user_id, default_workspace)
 
 
-def get_user_workspaces(db: Session, user_id: UUID):
+def get_user_workspaces(db: Session, user_id: UUID) -> WorkspaceListOut:
     """List an user workspaces."""
 
     stmt = select(WorkspaceMember.workspace_id).where(
@@ -113,7 +115,7 @@ def get_user_workspaces(db: Session, user_id: UUID):
     return WorkspaceListOut(workspaces=user_workspaces)
 
 
-def get_workspace_for_user(db: Session, workspace_id: UUID, user_id: UUID):
+def get_workspace_for_user(db: Session, workspace_id: UUID, user_id: UUID) -> Workspace:
     """Get specific workspace of an user."""
 
     workspace = get_workspace_by_id(db, workspace_id)
@@ -129,7 +131,7 @@ def get_workspace_for_user(db: Session, workspace_id: UUID, user_id: UUID):
 
 def rename_workspace(
     db: Session, workspace_id: UUID, user_id: UUID, update: WorkspaceUpdate
-):
+) -> None:
     """Update workspace name."""
 
     workspace = get_workspace_by_id(db, workspace_id)
