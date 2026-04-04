@@ -28,6 +28,7 @@ class TaskUpdate(BaseModel):
 
     title: str = Field(min_length=2, max_length=100)
     description: str
+    status: str
     priority: str
     due_date: date
     project_id: UUID
