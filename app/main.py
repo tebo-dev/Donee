@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.routes.auth_routes import router as auth_routher
 from app.api.routes.password_reset_routes import router as password_reset_router
+from app.api.routes.task_routes import router as task_router
 from app.api.routes.workspace_routes import router as workspace_router
 from app.core.domain_errors.auth_domain_errors import (
     ExistingEmail,
@@ -15,6 +16,10 @@ from app.core.domain_errors.auth_domain_errors import (
     UsernameTaken,
 )
 from app.core.domain_errors.base import DomainError
+from app.core.domain_errors.task_domain_errors import (
+    InvalidOrderParameter,
+    TaskNotFound,
+)
 from app.core.domain_errors.workspace_domain_errors import (
     ExistingWorkspaceName,
     NotAuthorized,
@@ -37,6 +42,7 @@ app.add_middleware(
 app.include_router(auth_routher, prefix="/auth", tags=["auth"])
 app.include_router(password_reset_router, prefix="/auth", tags=["auth"])
 app.include_router(workspace_router, tags=["workspace"])
+app.include_router(task_router, tags=["task"])
 
 
 @app.exception_handler(DomainError)
@@ -81,5 +87,15 @@ async def domain_error_handler(request: Request, exc: DomainError):
     elif isinstance(exc, WorkspaceNotFound):
         detail = "Workspace not found."
         status_code = status.HTTP_404_NOT_FOUND
+
+    # Task Domain Errors:
+
+    elif isinstance(exc, TaskNotFound):
+        detail = "Task not found."
+        status_code = status.HTTP_404_NOT_FOUND
+
+    elif isinstance(exc, InvalidOrderParameter):
+        detail = "Order parameter not allowed."
+        status_code = status.HTTP_400_BAD_REQUEST
 
     return JSONResponse(status_code=status_code, content={"detail": detail})

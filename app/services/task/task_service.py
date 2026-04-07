@@ -6,7 +6,10 @@ from sqlalchemy import case, select
 from sqlalchemy.orm import Session
 
 from app.core.domain_errors.project_domain_errors import ProjectNotFound
-from app.core.domain_errors.task_domain_errors import TaskNotFound
+from app.core.domain_errors.task_domain_errors import (
+    InvalidOrderParameter,
+    TaskNotFound,
+)
 from app.core.domain_errors.workspace_domain_errors import NotAuthorized
 from app.core.permissions import (
     can_create_task,
@@ -49,7 +52,7 @@ def validate_project(db: Session, project_id: UUID, workspace_id: UUID) -> bool:
 # Main service
 
 
-def create_task(db: Session, user_id: UUID, task_data: TaskCreate) -> Task | None:
+def create_task(db: Session, user_id: UUID, task_data: TaskCreate) -> Task:
     """Create a new task."""
 
     curr_member = get_member(db, user_id, task_data.workspace_id)
@@ -188,6 +191,9 @@ def order_tasks(
 
     elif order_by == "project":
         stmt = stmt.order_by(Task.project_id)
+
+    else:
+        raise InvalidOrderParameter()
 
     tasks = db.execute(stmt).scalars().all()
     return TaskListOut(tasks=tasks)
