@@ -16,6 +16,7 @@ from app.core.domain_errors.auth_domain_errors import (
     UsernameTaken,
 )
 from app.core.domain_errors.base import DomainError
+from app.core.domain_errors.project_domain_errors import ProjectNotFound
 from app.core.domain_errors.task_domain_errors import (
     InvalidOrderParameter,
     TaskNotFound,
@@ -97,5 +98,11 @@ async def domain_error_handler(request: Request, exc: DomainError):
     elif isinstance(exc, InvalidOrderParameter):
         detail = "Order parameter not allowed."
         status_code = status.HTTP_400_BAD_REQUEST
+
+    # Project Domain Errors:
+
+    elif isinstance(exc, ProjectNotFound):
+        detail = "Project not found."
+        status_code = status.HTTP_404_NOT_FOUND
 
     return JSONResponse(status_code=status_code, content={"detail": detail})
