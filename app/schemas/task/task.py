@@ -15,9 +15,9 @@ class TaskCreate(BaseModel):
 
     title: str = Field(min_length=2, max_length=100)
     description: str
-    priority: str
-    due_date: date
-    project_id: UUID
+    priority: int
+    due_at: date
+    project_id: UUID | None
     workspace_id: UUID
 
 
@@ -28,10 +28,10 @@ class TaskUpdate(BaseModel):
 
     title: str = Field(min_length=2, max_length=100)
     description: str
-    status: str
-    priority: str
-    due_date: date
-    project_id: UUID
+    status: str | None
+    priority: int
+    due_at: date
+    project_id: UUID | None
     workspace_id: UUID
 
 
@@ -47,10 +47,10 @@ class TaskOut(BaseModel):
     title: str
     description: str
     status: str
-    priority: str
-    due_date: date
+    priority: int
+    due_at: date
     workspace_id: UUID
-    project_id: UUID
+    project_id: UUID | None
     created_at: datetime
     updated_at: datetime
 

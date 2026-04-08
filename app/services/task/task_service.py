@@ -71,7 +71,8 @@ def create_task(db: Session, user_id: UUID, task_data: TaskCreate) -> Task:
         title=task_data.title,
         description=task_data.description,
         priority=task_data.priority,
-        due_at=task_data.due_date,
+        created_by=user_id,
+        due_at=task_data.due_at,
         project_id=task_data.project_id,
         workspace_id=task_data.workspace_id,
     )
@@ -94,7 +95,10 @@ def get_workspace_tasks(db: Session, user_id: UUID, workspace_id: UUID) -> TaskL
     stmt = select(Task).where(Task.workspace_id == workspace_id)
     workspace_tasks = db.execute(stmt).scalars().all()
 
-    return TaskListOut(tasks=workspace_tasks)
+    return TaskListOut(
+        tasks=workspace_tasks,
+        total=len(workspace_tasks),
+    )
 
 
 def get_task_for_user(db: Session, task_id: UUID, user_id: UUID) -> Task:
@@ -135,7 +139,7 @@ def update_task(
     task.title = task_update.title
     task.description = task_update.description
     task.priority = task_update.priority
-    task.due_at = task_update.due_date
+    task.due_at = task_update.due_at
     task.project_id = task_update.project_id
     task.workspace_id = task_update.workspace_id
 
@@ -196,4 +200,7 @@ def order_tasks(
         raise InvalidOrderParameter()
 
     tasks = db.execute(stmt).scalars().all()
-    return TaskListOut(tasks=tasks)
+    return TaskListOut(
+        tasks=tasks,
+        total=len(tasks),
+    )
