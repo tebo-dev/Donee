@@ -1,5 +1,6 @@
 """Import necessary libraries for task services."""
 
+from datetime import date
 from uuid import UUID
 
 from sqlalchemy import case, select
@@ -136,8 +137,12 @@ def update_task(
     ):
         raise NotAuthorized()
 
+    if task_update.status == "done":
+        task.completed_at = date.today()
+
     task.title = task_update.title
     task.description = task_update.description
+    task.status = task_update.status
     task.priority = task_update.priority
     task.due_at = task_update.due_at
     task.project_id = task_update.project_id

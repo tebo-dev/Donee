@@ -43,6 +43,7 @@ class Task(Base):
     project_id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=True,
     )
 
     title: Mapped[str] = mapped_column(
@@ -66,6 +67,7 @@ class Task(Base):
     assignee_id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=True,
     )
 
     created_by: Mapped[UUID] = mapped_column(
@@ -81,24 +83,29 @@ class Task(Base):
 
     start_at: Mapped[date] = mapped_column(
         Date,
+        nullable=True,
     )
 
     completed_at: Mapped[date] = mapped_column(
         Date,
+        nullable=True,
     )
 
     estimate_minutes: Mapped[int] = mapped_column(
         Integer,
+        nullable=True,
     )
 
     parent_task_id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("tasks.id", ondelete="CASCADE"),
         index=True,
+        nullable=True,
     )
 
     recurrence_rule: Mapped[str] = mapped_column(
         Text,
+        nullable=True,
     )
 
     is_deleted: Mapped[bool] = mapped_column(
