@@ -139,6 +139,8 @@ def update_task(
 
     if task_update.status == "done":
         task.completed_at = date.today()
+    else:
+        task.completed_at = None
 
     task.title = task_update.title
     task.description = task_update.description
@@ -187,7 +189,7 @@ def order_tasks(
 
     if order_by == "status":
         status_order = case(
-            (Task.status == "to_do", 1),
+            (Task.status == "to do", 1),
             (Task.status == "in_progress", 2),
             (Task.status == "done", 3),
             (Task.status == "blocked", 4),
