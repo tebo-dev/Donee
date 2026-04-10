@@ -49,15 +49,7 @@
 
         <div id="pageFeedback" class="workspace-feedback"></div>
 
-        <section id="workspaceEmptyState" class="workspace-empty">
-          <h3>No workspace available</h3>
-          <p>
-            This account does not have a workspace ready yet. Create one from the
-            workspace manager to continue.
-          </p>
-        </section>
-
-        <section id="workspaceOverviewPanel" class="workspace-panel workspace-overview">
+        <section class="workspace-panel workspace-overview">
           <div class="workspace-minimap">
             <h2 class="workspace-minimap-title" id="workspaceMinimapName">Workspace</h2>
 
@@ -65,15 +57,16 @@
               <div class="workspace-tree-group">
                 <span class="workspace-tree-label">Navigation</span>
                 <div class="workspace-tree-item">All Tasks</div>
-                <div class="workspace-tree-item">No Project</div>
-                <div class="workspace-tree-item">Project A</div>
-                <div class="workspace-tree-item">Project B</div>
+                <div class="workspace-tree-item">Ordered by status</div>
+                <div class="workspace-tree-item">Ordered by priority</div>
+                <div class="workspace-tree-item">Ordered by project</div>
               </div>
 
               <div class="workspace-tree-group">
                 <span class="workspace-tree-label">Quick actions</span>
-                <div class="workspace-tree-item">+ New Project</div>
                 <div class="workspace-tree-item">+ New Task</div>
+                <div class="workspace-tree-item">Edit existing task</div>
+                <div class="workspace-tree-item">Delete task</div>
               </div>
             </div>
           </div>
@@ -81,61 +74,142 @@
           <div class="workspace-overview-body">
             <div class="workspace-filter-row">
               <div>
-                <h2 class="workspace-section-title">Workspace overview</h2>
+                <h2 class="workspace-section-title">Tasks overview</h2>
                 <p class="workspace-section-copy">
-                  This layout follows the structure of your hand-drawn mockup:
-                  visible workspace name, side minimap, filters at the top and
-                  large action areas for the next slices.
+                  Your task slice is now connected to the active workspace. You can create,
+                  list, edit, delete and order tasks from here.
                 </p>
               </div>
 
-              <div class="workspace-filter-pills">
-                <span class="workspace-pill active">All</span>
-                <span class="workspace-pill">Projects</span>
-                <span class="workspace-pill">Tasks</span>
-                <span class="workspace-pill">Tags</span>
-              </div>
-            </div>
+              <div class="workspace-task-controls">
+                <div class="task-stat-card">
+                  <span class="task-stat-label">Total tasks</span>
+                  <strong class="task-stat-number" id="taskTotal">0</strong>
+                  <span class="task-stat-copy" id="taskSummary">0 tasks in this workspace</span>
+                </div>
 
-            <div class="workspace-action-grid">
-              <div class="workspace-action-card">
-                <button id="createProjectBtn" class="workspace-create-btn" type="button">
-                  <div class="workspace-create-btn-content">
-                    <span class="workspace-plus">＋</span>
-                    <span class="workspace-create-label">New Project</span>
-                  </div>
-                </button>
-              </div>
+                <div class="task-order-group">
+                  <label class="label" for="taskOrderSelect">Order by</label>
+                  <select id="taskOrderSelect" class="input">
+                    <option value="">Default</option>
+                    <option value="status">Status</option>
+                    <option value="priority">Priority</option>
+                    <option value="project">Project</option>
+                  </select>
+                </div>
 
-              <div class="workspace-action-card">
-                <button id="createTaskBtn" class="workspace-create-btn" type="button">
-                  <div class="workspace-create-btn-content">
-                    <span class="workspace-plus">＋</span>
-                    <span class="workspace-create-label">New Task</span>
-                  </div>
+                <button id="openCreateTaskBtn" class="button" type="button">
+                  New Task
                 </button>
               </div>
             </div>
 
-            <div class="workspace-placeholder-grid">
-              <div class="workspace-placeholder-card">
-                Future task / project cards will appear here for
-                <strong id="workspaceActionWorkspaceName">this workspace</strong>.
-              </div>
-
-              <div class="workspace-placeholder-card">
-                This zone intentionally stays simple during Workspace Foundation.
-              </div>
-
-              <div class="workspace-placeholder-card">
-                Notifications and profile can be implemented later in their own UI.
-              </div>
+            <div id="taskEmptyState" class="workspace-empty">
+              <h3>No tasks yet</h3>
+              <p>Create the first task in this workspace to start organizing your work.</p>
             </div>
+
+            <div id="taskList" class="task-grid"></div>
           </div>
         </section>
       </section>
     </main>
 
-    <script type="module" src="../../js/workspace.js"></script>
+    <div id="taskModalOverlay" class="task-modal-overlay hidden">
+      <div class="task-modal">
+        <div class="task-modal-head">
+          <div>
+            <h2 id="taskModalTitle" class="workspace-form-title">Create new task</h2>
+            <p class="workspace-form-copy">
+              Tasks belong to the current workspace. A project is optional.
+            </p>
+          </div>
+
+          <button id="taskModalCloseBtn" class="workspace-icon-btn task-close-btn" type="button">
+            ✕
+          </button>
+        </div>
+
+        <form id="taskForm" class="task-form">
+          <input id="taskId" type="hidden" />
+
+          <div class="workspace-form-row">
+            <label class="label" for="taskTitle">Title</label>
+            <input
+              class="input"
+              id="taskTitle"
+              name="taskTitle"
+              type="text"
+              maxlength="100"
+              placeholder="e.g. Prepare landing page copy"
+            />
+          </div>
+
+          <div class="workspace-form-row">
+            <label class="label" for="taskDescription">Description</label>
+            <textarea
+              class="input task-textarea"
+              id="taskDescription"
+              name="taskDescription"
+              placeholder="Describe the task..."
+            ></textarea>
+          </div>
+
+          <div class="task-form-grid">
+            <div class="workspace-form-row">
+              <label class="label" for="taskPriority">Priority</label>
+              <select id="taskPriority" class="input">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3" selected>3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+              </select>
+            </div>
+
+            <div class="workspace-form-row">
+              <label class="label" for="taskDueAt">Due date</label>
+              <input id="taskDueAt" class="input" type="date" />
+            </div>
+          </div>
+
+          <div class="workspace-form-row">
+            <label class="label" for="taskProjectId">Project ID (optional)</label>
+            <input
+              class="input"
+              id="taskProjectId"
+              name="taskProjectId"
+              type="text"
+              placeholder="Paste a project UUID or leave empty"
+            />
+          </div>
+
+          <div id="taskStatusRow" class="workspace-form-row hidden">
+            <label class="label" for="taskStatus">Status</label>
+            <select id="taskStatus" class="input">
+              <option value="to_do">To Do</option>
+              <option value="in_progress">In Progress</option>
+              <option value="done">Done</option>
+              <option value="blocked">Blocked</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
+
+          <p id="taskCompletedHint" class="task-completed-hint hidden"></p>
+          <p id="taskError" class="workspace-inline-error"></p>
+
+          <div class="workspace-form-actions">
+            <button id="taskSubmitBtn" class="button" type="submit">
+              Create task
+            </button>
+            <button id="taskModalCancelBtn" class="workspace-ghost-btn" type="button">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script type="module" src="../../js/tasks.js"></script>
   </body>
 </html>
