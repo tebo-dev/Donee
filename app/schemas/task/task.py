@@ -49,6 +49,7 @@ class TaskOut(BaseModel):
     status: str
     priority: int
     due_at: date
+    completed_at: date | None
     workspace_id: UUID
     project_id: UUID | None
     created_at: datetime
