@@ -30,7 +30,7 @@ def is_member(role: str) -> bool:
 def is_viewer(role: str) -> bool:
     """Determines if an user is a workspace viewer."""
 
-    if role == "admin":
+    if role == "viewer":
         return True
     return False
 

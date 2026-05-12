@@ -41,7 +41,7 @@ def validate_project(db: Session, project_id: UUID, workspace_id: UUID) -> bool:
     """Verify that a project exist in a workspace."""
 
     stmt = select(Project).where(
-        Project.id == project_id and Project.workspace_id == workspace_id
+        Project.id == project_id, Project.workspace_id == workspace_id
     )
     record = db.execute(stmt).scalars().first()
 
