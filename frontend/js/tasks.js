@@ -71,11 +71,12 @@ function clearFeedback() {
   el.textContent = "";
 }
 
-function requireAuth() {
+async function requireAuth() {
   try {
-    me();
+    await me();
   } catch {
     window.location.href = "../auth/login.html";
+    throw new Error("Not authenticated");
   }
 }
 
@@ -561,7 +562,7 @@ function bindControls() {
 }
 
 async function boot() {
-  requireAuth();
+  await requireAuth();
   renderSidebar();
   bindControls();
 
@@ -578,5 +579,9 @@ async function boot() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  await boot();
+  try {
+    await boot();
+  } catch {
+    // Auth redirect already in progress — do nothing
+  }
 });

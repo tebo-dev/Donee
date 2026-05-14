@@ -32,11 +32,12 @@ function getPageName() {
   return path.split("/").pop() || "";
 }
 
-function ensureAuthenticated() {
+async function ensureAuthenticated() {
   try {
-    return me();
+    await me();
   } catch {
     window.location.href = "../auth/login.html";
+    throw new Error("Not authenticated");
   }
 }
 
