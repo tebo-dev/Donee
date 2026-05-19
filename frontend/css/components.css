@@ -17,9 +17,10 @@ body {
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(1200px 700px at 70% 35%, rgba(0, 194, 255, 0.16), transparent 60%),
-    radial-gradient(1000px 600px at 25% 70%, rgba(120, 140, 255, 0.12), transparent 55%),
-    linear-gradient(120deg, #010b13, #061226, #020a14);
+    radial-gradient(1400px 800px at 72% 30%, rgba(0, 194, 255, 0.20), transparent 60%),
+    radial-gradient(1000px 700px at 22% 72%, rgba(100, 80, 255, 0.16), transparent 55%),
+    radial-gradient(800px 600px at 88% 82%, rgba(0, 140, 255, 0.10), transparent 50%),
+    linear-gradient(130deg, #010b13 0%, #061428 50%, #020a14 100%);
 }
 
 .bg::after {
@@ -28,18 +29,19 @@ body {
   inset: -40%;
   background: conic-gradient(
     from 0deg,
-    rgba(0, 194, 255, 0.16),
-    rgba(120, 140, 255, 0.12),
-    rgba(0, 194, 255, 0.16)
+    rgba(0, 194, 255, 0.18),
+    rgba(100, 80, 255, 0.14),
+    rgba(0, 160, 255, 0.10),
+    rgba(0, 194, 255, 0.18)
   );
-  filter: blur(60px);
+  filter: blur(70px);
   opacity: var(--bg-anim-opacity);
-  animation: spin 45s linear infinite;
+  animation: spin 50s linear infinite;
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg) scale(1.05); }
-  to   { transform: rotate(360deg) scale(1.05); }
+  from { transform: rotate(0deg) scale(1.08); }
+  to   { transform: rotate(360deg) scale(1.08); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -84,15 +86,15 @@ body {
   margin: 0 0 var(--space-1);
 }
 
-/* ---- Card (glass surface) ---- */
+/* ---- Card (glass surface — auth pages) ---- */
 .card {
   width: min(var(--max-card), 92vw);
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  background: var(--glass-l1-bg);
+  border: 1px solid var(--glass-l1-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--glass-shadow);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--glass-highlight), var(--glass-l1-shadow);
+  backdrop-filter: blur(var(--glass-l1-blur));
+  -webkit-backdrop-filter: blur(var(--glass-l1-blur));
   padding: var(--space-3);
 }
 

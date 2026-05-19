@@ -9,10 +9,37 @@
   --color-text-secondary: #b0b8c1;
   --color-danger: #ff4d4d;
 
-  /* Opacity helpers (glass) */
-  --glass-bg: rgba(47, 58, 90, 0.28);
-  --glass-border: rgba(255, 255, 255, 0.14);
-  --glass-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+  /* ---- Glass depth hierarchy ---- */
+
+  /* L1 — Thick outer shell: sidebar, topbar, modals */
+  --glass-l1-bg: rgba(6, 14, 30, 0.70);
+  --glass-l1-blur: 36px;
+  --glass-l1-border: rgba(255, 255, 255, 0.11);
+  --glass-l1-shadow:
+    0 32px 80px rgba(0, 0, 0, 0.68),
+    0 8px 24px rgba(0, 0, 0, 0.32),
+    0 0 0 0.5px rgba(255, 255, 255, 0.04);
+
+  /* L2 — Inner panels: workspace-panel, form cards */
+  --glass-l2-bg: rgba(16, 28, 56, 0.54);
+  --glass-l2-blur: 22px;
+  --glass-l2-border: rgba(255, 255, 255, 0.09);
+  --glass-l2-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.45),
+    0 4px 12px rgba(0, 0, 0, 0.22);
+
+  /* L3 — Surface cards: task cards, list rows, inner tiles */
+  --glass-l3-bg: rgba(255, 255, 255, 0.046);
+  --glass-l3-border: rgba(255, 255, 255, 0.07);
+
+  /* Shared detail */
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+  --glass-accent-glow: 0 0 0 1px rgba(0, 194, 255, 0.14);
+
+  /* Aliases for backward compat */
+  --glass-bg: var(--glass-l1-bg);
+  --glass-border: var(--glass-l1-border);
+  --glass-shadow: var(--glass-l1-shadow);
 
   /* Radius */
   --radius-lg: 20px;
