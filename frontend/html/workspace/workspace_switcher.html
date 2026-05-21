@@ -21,107 +21,77 @@
             <p class="workspace-kicker">Workspace manager</p>
             <h1 class="workspace-title">Your spaces</h1>
             <p class="workspace-title-sub">
-              Switch, create and rename workspaces from one place.
+              Click a workspace to open it. Use the actions to rename or configure.
             </p>
+          </div>
+
+          <div class="workspace-topbar-actions">
+            <button
+              id="openCreateModalBtn"
+              class="workspace-icon-btn"
+              type="button"
+              aria-label="Create new workspace"
+              title="New workspace"
+            >＋</button>
           </div>
         </header>
 
         <div id="pageFeedback" class="workspace-feedback"></div>
 
-        <section class="workspace-split">
-          <article class="workspace-form-card">
-            <div class="workspace-form-row">
-              <h2 class="workspace-form-title">Create new workspace</h2>
-              <p class="workspace-form-copy">
-                This follows the second sketch: one clear area to create a new
-                workspace and then move between all the existing ones.
-              </p>
-            </div>
-
-            <form id="createWorkspaceForm" class="stack">
-              <div class="workspace-form-row">
-                <label class="label" for="createWorkspaceName">Workspace name</label>
-                <input
-                  class="input"
-                  id="createWorkspaceName"
-                  name="createWorkspaceName"
-                  type="text"
-                  placeholder="e.g. Design Studio"
-                  maxlength="50"
-                />
-              </div>
-
-              <p id="createError" class="workspace-inline-error"></p>
-
-              <div class="workspace-form-actions">
-                <button id="createWorkspaceBtn" class="button" type="submit">
-                  Create workspace
-                </button>
-                <a class="workspace-ghost-btn" href="./workspace_home.html">
-                  Back to workspace
-                </a>
-              </div>
-            </form>
-          </article>
-
-          <article class="workspace-form-card">
-            <div class="workspace-form-row">
-              <h2 class="workspace-form-title">Rename workspace</h2>
-              <p class="workspace-form-copy">
-                Select a workspace from the list below and update its name here.
-              </p>
-            </div>
-
-            <div class="workspace-rename-block">
-              <span class="workspace-sidebar-label">Selected workspace</span>
-              <strong id="renameCurrentName">Choose one below</strong>
-            </div>
-
-            <form id="renameWorkspaceForm" class="stack">
-              <input id="renameWorkspaceId" type="hidden" />
-
-              <div class="workspace-form-row">
-                <label class="label" for="renameWorkspaceName">New name</label>
-                <input
-                  class="input"
-                  id="renameWorkspaceName"
-                  name="renameWorkspaceName"
-                  type="text"
-                  placeholder="New workspace name"
-                  maxlength="50"
-                />
-              </div>
-
-              <p id="renameError" class="workspace-inline-error"></p>
-
-              <div class="workspace-form-actions">
-                <button id="renameWorkspaceBtn" class="button" type="submit">
-                  Save new name
-                </button>
-              </div>
-            </form>
-          </article>
-        </section>
-
         <section class="workspace-panel">
-          <div class="workspace-filter-row">
-            <div>
-              <h2 class="workspace-section-title">All workspaces</h2>
-              <p class="workspace-section-copy">
-                Open any workspace, rename it, or move into its configuration page.
-              </p>
-            </div>
-          </div>
-
           <div id="workspaceListEmpty" class="workspace-empty">
-            <h3>No workspaces found</h3>
-            <p>Create your first workspace to continue.</p>
+            <h3>No workspaces yet</h3>
+            <p>Hit the + button above to create your first workspace.</p>
           </div>
 
           <div id="workspaceList" class="workspace-list"></div>
         </section>
       </section>
     </main>
+
+    <!-- Create workspace modal -->
+    <div id="createWorkspaceModal" class="task-modal-overlay hidden">
+      <div class="task-modal">
+        <div class="task-modal-head">
+          <div>
+            <h2 class="workspace-form-title">New workspace</h2>
+            <p class="workspace-form-copy">Give your new space a name to get started.</p>
+          </div>
+          <button
+            id="createModalCloseBtn"
+            class="workspace-icon-btn task-close-btn"
+            type="button"
+            aria-label="Close"
+          >✕</button>
+        </div>
+
+        <form id="createWorkspaceForm" class="task-form">
+          <div class="workspace-form-row">
+            <label class="label" for="createWorkspaceName">Workspace name</label>
+            <input
+              class="input"
+              id="createWorkspaceName"
+              name="createWorkspaceName"
+              type="text"
+              placeholder="e.g. Design Studio"
+              maxlength="50"
+              autocomplete="off"
+            />
+          </div>
+
+          <p id="createError" class="workspace-inline-error"></p>
+
+          <div class="workspace-form-actions">
+            <button id="createWorkspaceSubmitBtn" class="button" type="submit">
+              Create workspace
+            </button>
+            <button id="createModalCancelBtn" class="workspace-ghost-btn" type="button">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <script type="module" src="../../js/workspace.js"></script>
   </body>

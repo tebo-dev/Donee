@@ -229,7 +229,75 @@ function renderOverviewPage(workspace) {
 
   if (switcherTrigger) {
     switcherTrigger.addEventListener("click", () => {
-      window.location.href = "./workspace_switcher.html";
+      const titleEl = $("#workspacePageTitle");
+      if (!titleEl) return;
+
+      // Prevent double-activation
+      if (switcherTrigger.querySelector(".workspace-title-input")) return;
+
+      const currentName = workspace.name;
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "workspace-title-input";
+      input.value = currentName;
+      input.setAttribute("aria-label", "Workspace name");
+
+      titleEl.replaceWith(input);
+      input.focus();
+      input.select();
+
+      const restoreTitle = (name) => {
+        const h1 = document.createElement("h1");
+        h1.className = "workspace-title";
+        h1.id = "workspacePageTitle";
+        h1.textContent = name;
+        if (document.contains(input)) input.replaceWith(h1);
+      };
+
+      const doSave = async () => {
+        const newName = input.value.trim();
+        if (!newName || newName === currentName) {
+          restoreTitle(currentName);
+          return;
+        }
+
+        input.disabled = true;
+
+        try {
+          await renameWorkspace(workspace.id, { name: newName });
+          workspace.name = newName;
+          restoreTitle(newName);
+
+          // Sync sidebar and minimap
+          const sidebarName = document.querySelector(".workspace-sidebar-name");
+          if (sidebarName) sidebarName.textContent = newName;
+          if (minimapWorkspaceName) minimapWorkspaceName.textContent = newName;
+
+          renderPageFeedback("Workspace renamed successfully.", "success");
+        } catch (err) {
+          input.disabled = false;
+          renderPageFeedback(err.message || "Could not rename workspace.", "error");
+          restoreTitle(currentName);
+        }
+      };
+
+      let cancelled = false;
+
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          cancelled = true;
+          restoreTitle(currentName);
+        }
+        if (e.key === "Enter") {
+          e.preventDefault();
+          input.blur();
+        }
+      });
+
+      input.addEventListener("blur", () => {
+        if (!cancelled) doSave();
+      });
     });
   }
 
@@ -274,78 +342,195 @@ function renderWorkspaceList(workspaces, activeWorkspaceId) {
   if (emptyState) emptyState.classList.remove("show");
 
   workspaces.forEach((workspace) => {
-    const article = document.createElement("article");
-    article.className =
-      "workspace-list-card" + (workspace.id === activeWorkspaceId ? " active" : "");
+    const isActive = workspace.id === activeWorkspaceId;
+    const card = document.createElement("article");
+    card.className = "workspace-list-card" + (isActive ? " active" : "");
+    card.dataset.workspaceId = workspace.id;
 
-    article.innerHTML = `
-      <div class="workspace-list-main">
-        <h3 class="workspace-list-name">${escapeHtml(workspace.name)}</h3>
-        <p class="workspace-list-meta">Created on ${formatDate(workspace.created_at)}</p>
-      </div>
+    card.innerHTML = `
+      <button
+        class="workspace-list-open-btn"
+        type="button"
+        data-action="open"
+        data-id="${workspace.id}"
+        aria-label="Open ${escapeAttribute(workspace.name)}"
+      >
+        <div class="workspace-list-main">
+          <h3 class="workspace-list-name">${escapeHtml(workspace.name)}</h3>
+          <p class="workspace-list-meta">Created on ${formatDate(workspace.created_at)}</p>
+        </div>
+      </button>
 
       <div class="workspace-list-actions">
-        <button class="workspace-mini-btn" type="button" data-action="open" data-id="${workspace.id}">
-          Open
-        </button>
-        <button class="workspace-mini-btn muted" type="button" data-action="rename" data-id="${workspace.id}" data-name="${escapeAttribute(workspace.name)}">
+        <button class="workspace-mini-btn muted" type="button" data-action="rename"
+          data-id="${workspace.id}" data-name="${escapeAttribute(workspace.name)}">
           Rename
         </button>
-        <button class="workspace-mini-btn muted" type="button" data-action="settings" data-id="${workspace.id}">
+        <button class="workspace-mini-btn muted" type="button" data-action="settings"
+          data-id="${workspace.id}">
           Settings
         </button>
       </div>
     `;
 
-    list.appendChild(article);
+    list.appendChild(card);
   });
 
-  const buttons = list.querySelectorAll("[data-action]");
-  buttons.forEach((button) => {
-    button.addEventListener("click", () => {
-      const action = button.dataset.action;
-      const workspaceId = button.dataset.id;
-      const workspaceName = button.dataset.name || "";
+  // Single delegated listener — safe because list.innerHTML was cleared above
+  list.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-action]");
+    if (!btn) return;
 
-      if (action === "open") {
-        setActiveWorkspaceId(workspaceId);
-        window.location.href = "./workspace_home.html";
+    const action = btn.dataset.action;
+    const workspaceId = btn.dataset.id;
+    const card = btn.closest(".workspace-list-card");
+
+    if (action === "open") {
+      setActiveWorkspaceId(workspaceId);
+      window.location.href = "./workspace_home.html";
+      return;
+    }
+
+    if (action === "settings") {
+      setActiveWorkspaceId(workspaceId);
+      window.location.href = "./workspace_settings.html";
+      return;
+    }
+
+    if (action === "rename") {
+      const workspaceName = btn.dataset.name;
+      const nameEl = card.querySelector(".workspace-list-name");
+      const actionsEl = card.querySelector(".workspace-list-actions");
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "input workspace-list-rename-input";
+      input.value = workspaceName;
+      nameEl.replaceWith(input);
+      input.focus();
+      input.select();
+
+      actionsEl.innerHTML = `
+        <button class="workspace-mini-btn" type="button"
+          data-action="save-rename" data-id="${workspaceId}">Save</button>
+        <button class="workspace-mini-btn muted" type="button"
+          data-action="cancel-rename" data-id="${workspaceId}"
+          data-name="${escapeAttribute(workspaceName)}">Cancel</button>
+      `;
+
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          actionsEl.querySelector("[data-action='save-rename']")?.click();
+        }
+        if (e.key === "Escape") {
+          actionsEl.querySelector("[data-action='cancel-rename']")?.click();
+        }
+      });
+
+      return;
+    }
+
+    if (action === "save-rename") {
+      const input = card.querySelector(".workspace-list-rename-input");
+      const newName = input?.value.trim() || "";
+      const actionsEl = card.querySelector(".workspace-list-actions");
+
+      if (!newName) {
+        input?.focus();
         return;
       }
 
-      if (action === "rename") {
-        const renameId = $("#renameWorkspaceId");
-        const renameName = $("#renameWorkspaceName");
-        const renameCurrent = $("#renameCurrentName");
+      btn.disabled = true;
 
-        if (renameId) renameId.value = workspaceId;
-        if (renameName) renameName.value = workspaceName;
-        if (renameCurrent) renameCurrent.textContent = workspaceName;
+      try {
+        await renameWorkspace(workspaceId, { name: newName });
 
-        const renameError = $("#renameError");
-        if (renameError) renameError.classList.remove("show");
-        return;
+        // Restore card UI with the new name
+        const h3 = document.createElement("h3");
+        h3.className = "workspace-list-name";
+        h3.textContent = newName;
+        input.replaceWith(h3);
+
+        actionsEl.innerHTML = `
+          <button class="workspace-mini-btn muted" type="button"
+            data-action="rename" data-id="${workspaceId}"
+            data-name="${escapeAttribute(newName)}">Rename</button>
+          <button class="workspace-mini-btn muted" type="button"
+            data-action="settings" data-id="${workspaceId}">Settings</button>
+        `;
+
+        // Sync the open button aria-label
+        const openBtn = card.querySelector("[data-action='open']");
+        if (openBtn) openBtn.setAttribute("aria-label", `Open ${newName}`);
+
+        renderPageFeedback("Workspace renamed successfully.", "success");
+      } catch (err) {
+        renderPageFeedback(err.message || "Could not rename workspace.", "error");
+        btn.disabled = false;
       }
 
-      if (action === "settings") {
-        setActiveWorkspaceId(workspaceId);
-        window.location.href = "./workspace_settings.html";
-      }
-    });
+      return;
+    }
+
+    if (action === "cancel-rename") {
+      const workspaceName = btn.dataset.name;
+      const input = card.querySelector(".workspace-list-rename-input");
+      const actionsEl = card.querySelector(".workspace-list-actions");
+
+      const h3 = document.createElement("h3");
+      h3.className = "workspace-list-name";
+      h3.textContent = workspaceName;
+      input.replaceWith(h3);
+
+      actionsEl.innerHTML = `
+        <button class="workspace-mini-btn muted" type="button"
+          data-action="rename" data-id="${workspaceId}"
+          data-name="${escapeAttribute(workspaceName)}">Rename</button>
+        <button class="workspace-mini-btn muted" type="button"
+          data-action="settings" data-id="${workspaceId}">Settings</button>
+      `;
+    }
   });
 }
 
-async function handleCreateWorkspaceSubmit() {
+function handleCreateWorkspaceModal() {
+  const modal = $("#createWorkspaceModal");
+  const openBtn = $("#openCreateModalBtn");
+  const closeBtn = $("#createModalCloseBtn");
+  const cancelBtn = $("#createModalCancelBtn");
   const form = $("#createWorkspaceForm");
-  if (!form) return;
-
   const input = $("#createWorkspaceName");
   const errorEl = $("#createError");
-  const button = $("#createWorkspaceBtn");
+  const submitBtn = $("#createWorkspaceSubmitBtn");
 
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    clearError(errorEl);
+  if (!modal) return;
+
+  const openModal = () => {
+    modal.classList.remove("hidden");
+    input?.focus();
+  };
+
+  const closeModal = () => {
+    modal.classList.add("hidden");
+    if (input) input.value = "";
+    errorEl?.classList.remove("show");
+  };
+
+  openBtn?.addEventListener("click", openModal);
+  closeBtn?.addEventListener("click", closeModal);
+  cancelBtn?.addEventListener("click", closeModal);
+
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !modal.classList.contains("hidden")) closeModal();
+  });
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
     errorEl?.classList.remove("show");
 
     const name = input?.value.trim() || "";
@@ -358,69 +543,19 @@ async function handleCreateWorkspaceSubmit() {
       return;
     }
 
-    setLoading(button, true);
+    setLoading(submitBtn, true);
 
     try {
       const newWorkspace = await createWorkspace({ name });
       setActiveWorkspaceId(newWorkspace.id);
       window.location.href = "./workspace_home.html";
-    } catch (error) {
+    } catch (err) {
       if (errorEl) {
-        errorEl.textContent = error.message;
+        errorEl.textContent = err.message;
         errorEl.classList.add("show");
       }
     } finally {
-      setLoading(button, false);
-    }
-  });
-}
-
-async function handleRenameWorkspaceSubmit() {
-  const form = $("#renameWorkspaceForm");
-  if (!form) return;
-
-  const workspaceIdEl = $("#renameWorkspaceId");
-  const input = $("#renameWorkspaceName");
-  const errorEl = $("#renameError");
-  const button = $("#renameWorkspaceBtn");
-
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    clearError(errorEl);
-    errorEl?.classList.remove("show");
-
-    const workspaceId = workspaceIdEl?.value || "";
-    const name = input?.value.trim() || "";
-
-    if (!workspaceId) {
-      if (errorEl) {
-        errorEl.textContent = "Select a workspace to rename first.";
-        errorEl.classList.add("show");
-      }
-      return;
-    }
-
-    if (!name) {
-      if (errorEl) {
-        errorEl.textContent = "New workspace name is required.";
-        errorEl.classList.add("show");
-      }
-      return;
-    }
-
-    setLoading(button, true);
-
-    try {
-      await renameWorkspace(workspaceId, { name });
-      setActiveWorkspaceId(workspaceId);
-      window.location.href = "./workspace_switcher.html?renamed=1";
-    } catch (error) {
-      if (errorEl) {
-        errorEl.textContent = error.message;
-        errorEl.classList.add("show");
-      }
-    } finally {
-      setLoading(button, false);
+      setLoading(submitBtn, false);
     }
   });
 }
@@ -513,21 +648,15 @@ async function bootOverviewPage() {
 
 async function bootSwitcherPage() {
   renderSidebarLayout();
-  handleCreateWorkspaceSubmit();
-  handleRenameWorkspaceSubmit();
+  handleCreateWorkspaceModal();
 
   try {
     await ensureAuthenticated();
     const { workspaces, activeWorkspace } = await resolveActiveWorkspace();
     renderSidebarWorkspace(activeWorkspace);
     renderWorkspaceList(workspaces, activeWorkspace?.id || "");
-
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("renamed") === "1") {
-      renderPageFeedback("Workspace renamed successfully.", "success");
-    }
   } catch (error) {
-    renderPageFeedback(error.message || "Could not load your workspaces.");
+    renderPageFeedback(error.message || "Could not load your workspaces.", "error");
   }
 }
 

@@ -259,6 +259,65 @@
   cursor: pointer;
 }
 
+.workspace-title-button:hover .workspace-title {
+  text-decoration: underline;
+  text-decoration-color: rgba(0, 194, 255, 0.45);
+  text-underline-offset: 6px;
+}
+
+.workspace-title-button:focus-visible {
+  outline: 2px solid rgba(0, 194, 255, 0.40);
+  outline-offset: 6px;
+  border-radius: 6px;
+}
+
+/* Inline rename input — home page title */
+.workspace-title-input {
+  background: rgba(0, 194, 255, 0.05);
+  border: 1px solid rgba(0, 194, 255, 0.38);
+  border-radius: 12px;
+  box-shadow: 0 0 0 3px rgba(0, 194, 255, 0.09);
+  color: var(--color-text-primary);
+  font-family: var(--font-brand);
+  font-size: clamp(44px, 7vw, 72px);
+  font-weight: var(--w-semibold);
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+  padding: 4px 14px;
+  height: auto;
+  width: 100%;
+  max-width: 600px;
+  outline: none;
+}
+
+.workspace-title-input:focus {
+  border-color: rgba(0, 194, 255, 0.62);
+  box-shadow: 0 0 0 4px rgba(0, 194, 255, 0.14);
+}
+
+/* Open button wrapping the list card's left area */
+.workspace-list-open-btn {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-family: inherit;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Inline rename input — workspace list rows */
+.workspace-list-rename-input {
+  font-size: 20px;
+  font-weight: var(--w-semibold);
+  height: 40px;
+  padding: 0 12px;
+  width: 100%;
+  max-width: 360px;
+}
+
 .workspace-title {
   margin: 0;
   font-family: var(--font-brand);
