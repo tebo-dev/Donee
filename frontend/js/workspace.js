@@ -386,6 +386,7 @@ function renderWorkspaceList(workspaces, activeWorkspaceId) {
     const card = btn.closest(".workspace-list-card");
 
     if (action === "open") {
+      if (card.querySelector(".workspace-list-rename-input")) return;
       setActiveWorkspaceId(workspaceId);
       window.location.href = "./workspace_home.html";
       return;
@@ -409,6 +410,8 @@ function renderWorkspaceList(workspaces, activeWorkspaceId) {
       nameEl.replaceWith(input);
       input.focus();
       input.select();
+      input.addEventListener("click", (e) => e.stopPropagation());
+      input.addEventListener("keydown", (e) => { if (e.key === " ") e.stopPropagation(); });
 
       actionsEl.innerHTML = `
         <button class="workspace-mini-btn" type="button"

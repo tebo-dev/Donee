@@ -215,9 +215,69 @@ function renderWorkspaceHeader(workspace) {
   if (sidebarMeta) sidebarMeta.textContent = `Created on ${formatDate(workspace.created_at)}`;
   if (minimapName) minimapName.textContent = workspace.name;
 
-  $("#workspaceTitleTrigger")?.addEventListener("click", () => {
-    window.location.href = "./workspace_switcher.html";
-  });
+  const switcherTrigger = $("#workspaceTitleTrigger");
+  if (switcherTrigger) {
+    switcherTrigger.addEventListener("click", () => {
+      const titleEl = $("#workspacePageTitle");
+      if (!titleEl) return;
+
+      if (switcherTrigger.querySelector(".workspace-title-input")) return;
+
+      const currentName = currentWorkspace?.name;
+      if (!currentName) return;
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "workspace-title-input";
+      input.value = currentName;
+      input.setAttribute("aria-label", "Workspace name");
+
+      titleEl.replaceWith(input);
+      input.focus();
+      input.select();
+
+      const restoreTitle = (name) => {
+        const h1 = document.createElement("h1");
+        h1.className = "workspace-title";
+        h1.id = "workspacePageTitle";
+        h1.textContent = name;
+        if (document.contains(input)) input.replaceWith(h1);
+      };
+
+      const doSave = async () => {
+        const newName = input.value.trim();
+        if (!newName || newName === currentName) {
+          restoreTitle(currentName);
+          return;
+        }
+        input.disabled = true;
+        try {
+          await request(`/workspaces/${currentWorkspace.id}`, {
+            method: "PATCH",
+            body: { name: newName },
+          });
+          currentWorkspace.name = newName;
+          restoreTitle(newName);
+          const sidebarName = document.querySelector("#sidebarWorkspaceName");
+          if (sidebarName) sidebarName.textContent = newName;
+          renderFeedback("Workspace renamed successfully.", "success");
+        } catch (err) {
+          input.disabled = false;
+          renderFeedback(err.message || "Could not rename workspace.", "error");
+          restoreTitle(currentName);
+        }
+      };
+
+      let cancelled = false;
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") { cancelled = true; restoreTitle(currentName); }
+        if (e.key === "Enter") { e.preventDefault(); input.blur(); }
+      });
+      input.addEventListener("blur", () => {
+        if (!cancelled) doSave();
+      });
+    });
+  }
 
   $("#workspaceSettingsBtn")?.addEventListener("click", () => {
     window.location.href = "./workspace_settings.html";
