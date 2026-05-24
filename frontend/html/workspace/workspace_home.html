@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Donee — Workspace</title>
-
     <link rel="stylesheet" href="../../css/tokens.css" />
     <link rel="stylesheet" href="../../css/components.css" />
     <link rel="stylesheet" href="../../css/workspace.css" />
@@ -19,7 +18,6 @@
         <header class="workspace-topbar">
           <div class="workspace-title-wrap">
             <p class="workspace-kicker">Current workspace</p>
-
             <button
               id="workspaceTitleTrigger"
               class="workspace-title-button"
@@ -29,10 +27,7 @@
             >
               <h1 class="workspace-title" id="workspacePageTitle">Loading...</h1>
             </button>
-
-            <p class="workspace-title-sub" id="workspacePageMeta">
-              Preparing workspace context.
-            </p>
+            <p class="workspace-title-sub" id="workspacePageMeta">Preparing workspace context.</p>
           </div>
 
           <div class="workspace-topbar-actions">
@@ -42,9 +37,7 @@
               type="button"
               aria-label="Open workspace settings"
               title="Workspace settings"
-            >
-              ⚙
-            </button>
+            >⚙</button>
           </div>
         </header>
 
@@ -52,62 +45,31 @@
 
         <section class="workspace-panel workspace-overview">
           <div class="workspace-minimap">
-            <h2 class="workspace-minimap-title" id="workspaceMinimapName">Workspace</h2>
+            <div class="workspace-minimap-header">
+              <h2 class="workspace-minimap-title" id="workspaceMinimapName">Workspace</h2>
+              <span class="workspace-task-badge" id="minimapTaskCount"></span>
+            </div>
 
             <div class="workspace-tree">
               <div class="workspace-tree-group">
-                <span class="workspace-tree-label">Navigation</span>
-                <div class="workspace-tree-item">All Tasks</div>
-                <div class="workspace-tree-item">Ordered by status</div>
-                <div class="workspace-tree-item">Ordered by priority</div>
-                <div class="workspace-tree-item">Ordered by project</div>
+                <span class="workspace-tree-label">View</span>
+                <button class="workspace-tree-item active" type="button" data-order="">All tasks</button>
+                <button class="workspace-tree-item" type="button" data-order="status">By status</button>
+                <button class="workspace-tree-item" type="button" data-order="priority">By priority</button>
+                <button class="workspace-tree-item" type="button" data-order="project">By project</button>
               </div>
 
               <div class="workspace-tree-group">
-                <span class="workspace-tree-label">Quick actions</span>
-                <div class="workspace-tree-item">+ New Task</div>
-                <div class="workspace-tree-item">Edit existing task</div>
-                <div class="workspace-tree-item">Delete task</div>
+                <span class="workspace-tree-label">Actions</span>
+                <button class="workspace-tree-item accent" type="button" id="minimapNewTaskBtn">＋ New Task</button>
               </div>
             </div>
           </div>
 
           <div class="workspace-overview-body">
-            <div class="workspace-filter-row">
-              <div>
-                <h2 class="workspace-section-title">Tasks overview</h2>
-                <p class="workspace-section-copy">
-                  Your task slice is now connected to the active workspace. You can create,
-                  list, edit, delete and order tasks from here.
-                </p>
-              </div>
-
-              <div class="workspace-task-controls">
-                <div class="task-stat-card">
-                  <span class="task-stat-label">Total tasks</span>
-                  <strong class="task-stat-number" id="taskTotal">0</strong>
-                  <span class="task-stat-copy" id="taskSummary">0 tasks in this workspace</span>
-                </div>
-
-                <div class="task-order-group">
-                  <label class="label" for="taskOrderSelect">Order by</label>
-                  <select id="taskOrderSelect" class="input">
-                    <option value="">Default</option>
-                    <option value="status">Status</option>
-                    <option value="priority">Priority</option>
-                    <option value="project">Project</option>
-                  </select>
-                </div>
-
-                <button id="openCreateTaskBtn" class="button" type="button">
-                  New Task
-                </button>
-              </div>
-            </div>
-
             <div id="taskEmptyState" class="workspace-empty">
               <h3>No tasks yet</h3>
-              <p>Create the first task in this workspace to start organizing your work.</p>
+              <p>Create the first task in this workspace to start organising your work.</p>
             </div>
 
             <div id="taskList" class="task-grid"></div>
@@ -116,24 +78,18 @@
       </section>
     </main>
 
+    <!-- Create task modal -->
     <div id="taskModalOverlay" class="task-modal-overlay hidden">
       <div class="task-modal">
         <div class="task-modal-head">
           <div>
-            <h2 id="taskModalTitle" class="workspace-form-title">Create new task</h2>
-            <p class="workspace-form-copy">
-              Tasks belong to the current workspace. A project is optional.
-            </p>
+            <h2 class="workspace-form-title">New task</h2>
+            <p class="workspace-form-copy">Tasks belong to the current workspace. A project is optional.</p>
           </div>
-
-          <button id="taskModalCloseBtn" class="workspace-icon-btn task-close-btn" type="button">
-            ✕
-          </button>
+          <button id="taskModalCloseBtn" class="workspace-icon-btn task-close-btn" type="button">✕</button>
         </div>
 
         <form id="taskForm" class="task-form">
-          <input id="taskId" type="hidden" />
-
           <div class="workspace-form-row">
             <label class="label" for="taskTitle">Title</label>
             <input
@@ -160,11 +116,11 @@
             <div class="workspace-form-row">
               <label class="label" for="taskPriority">Priority</label>
               <select id="taskPriority" class="input">
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3" selected>3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
+                <option value="1">1 — Highest</option>
+                <option value="2">2 — High</option>
+                <option value="3" selected>3 — Medium</option>
+                <option value="4">4 — Low</option>
+                <option value="5">5 — Lowest</option>
               </select>
             </div>
 
@@ -185,29 +141,88 @@
             />
           </div>
 
-          <div id="taskStatusRow" class="workspace-form-row hidden">
-            <label class="label" for="taskStatus">Status</label>
-            <select id="taskStatus" class="input">
-              <option value="to_do">To Do</option>
-              <option value="in_progress">In Progress</option>
-              <option value="done">Done</option>
-              <option value="blocked">Blocked</option>
-              <option value="archived">Archived</option>
-            </select>
-          </div>
-
-          <p id="taskCompletedHint" class="task-completed-hint hidden"></p>
           <p id="taskError" class="workspace-inline-error"></p>
 
           <div class="workspace-form-actions">
-            <button id="taskSubmitBtn" class="button" type="submit">
-              Create task
-            </button>
-            <button id="taskModalCancelBtn" class="workspace-ghost-btn" type="button">
-              Cancel
-            </button>
+            <button id="taskSubmitBtn" class="button" type="submit">Create task</button>
+            <button id="taskModalCancelBtn" class="workspace-ghost-btn" type="button">Cancel</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Task detail side panel -->
+    <div id="taskDetailOverlay" class="task-detail-overlay hidden">
+      <div class="task-detail-panel">
+        <div class="task-detail-topbar">
+          <div id="detailBadges" class="task-detail-badges"></div>
+          <div class="task-detail-topbar-actions">
+            <button id="detailSaveBtn" class="button task-detail-save hidden" type="button">Save</button>
+            <button id="detailDeleteBtn" class="workspace-mini-btn muted" type="button">Delete</button>
+            <button id="detailCloseBtn" class="workspace-icon-btn task-close-btn" type="button">✕</button>
+          </div>
+        </div>
+
+        <div class="task-detail-body">
+          <input
+            id="detailTitle"
+            class="task-detail-title-input"
+            type="text"
+            maxlength="100"
+            placeholder="Task title"
+          />
+          <textarea
+            id="detailDescription"
+            class="task-detail-desc-input"
+            placeholder="No description."
+          ></textarea>
+
+          <div class="task-detail-fields">
+            <div class="task-detail-field">
+              <label class="task-detail-field-label" for="detailStatus">Status</label>
+              <select id="detailStatus" class="input task-detail-select">
+                <option value="to_do">To Do</option>
+                <option value="in_progress">In Progress</option>
+                <option value="done">Done</option>
+                <option value="blocked">Blocked</option>
+                <option value="archived">Archived</option>
+              </select>
+            </div>
+
+            <div class="task-detail-field">
+              <label class="task-detail-field-label" for="detailPriority">Priority</label>
+              <select id="detailPriority" class="input task-detail-select">
+                <option value="1">1 — Highest</option>
+                <option value="2">2 — High</option>
+                <option value="3">3 — Medium</option>
+                <option value="4">4 — Low</option>
+                <option value="5">5 — Lowest</option>
+              </select>
+            </div>
+
+            <div class="task-detail-field">
+              <label class="task-detail-field-label" for="detailDueAt">Due date</label>
+              <input id="detailDueAt" class="input task-detail-input" type="date" />
+            </div>
+
+            <div class="task-detail-field">
+              <label class="task-detail-field-label">Created</label>
+              <span id="detailCreatedAt" class="task-detail-readonly"></span>
+            </div>
+
+            <div class="task-detail-field">
+              <label class="task-detail-field-label">Updated</label>
+              <span id="detailUpdatedAt" class="task-detail-readonly"></span>
+            </div>
+
+            <div class="task-detail-field" id="detailCompletedRow" style="display:none">
+              <label class="task-detail-field-label">Completed</label>
+              <span id="detailCompletedAt" class="task-detail-readonly"></span>
+            </div>
+          </div>
+
+          <p id="detailError" class="workspace-inline-error"></p>
+        </div>
       </div>
     </div>
 

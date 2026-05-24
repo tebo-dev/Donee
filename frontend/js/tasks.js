@@ -7,6 +7,10 @@ const ACTIVE_WORKSPACE_KEY = "donee_active_workspace_id";
 let currentWorkspace = null;
 let currentTasks = [];
 let currentOrder = "";
+let detailSnapshot = null;
+let currentDetailTask = null;
+
+// ---- Utils ----
 
 function getActiveWorkspaceId() {
   return localStorage.getItem(ACTIVE_WORKSPACE_KEY);
@@ -18,32 +22,20 @@ function setActiveWorkspaceId(workspaceId) {
 
 function formatDate(value) {
   if (!value) return "—";
-
   const date = new Date(value);
-
   if (!Number.isNaN(date.getTime())) {
-    return new Intl.DateTimeFormat("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    }).format(date);
+    return new Intl.DateTimeFormat("en-US", { year: "numeric", month: "short", day: "numeric" }).format(date);
   }
-
   const fallback = new Date(`${value}T00:00:00`);
   if (!Number.isNaN(fallback.getTime())) {
-    return new Intl.DateTimeFormat("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    }).format(fallback);
+    return new Intl.DateTimeFormat("en-US", { year: "numeric", month: "short", day: "numeric" }).format(fallback);
   }
-
   return value;
 }
 
 function prettifyStatus(status) {
   if (!status) return "Unknown";
-  return status.replaceAll("_", " ").replace(/\b\w/g, (char) => char.toUpperCase());
+  return status.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function escapeHtml(value) {
@@ -58,7 +50,6 @@ function escapeHtml(value) {
 function renderFeedback(message, type = "error") {
   const el = $("#pageFeedback");
   if (!el) return;
-
   el.className = `workspace-feedback ${type}`;
   el.textContent = message;
 }
@@ -66,10 +57,11 @@ function renderFeedback(message, type = "error") {
 function clearFeedback() {
   const el = $("#pageFeedback");
   if (!el) return;
-
   el.className = "workspace-feedback";
   el.textContent = "";
 }
+
+// ---- Auth ----
 
 async function requireAuth() {
   try {
@@ -79,6 +71,8 @@ async function requireAuth() {
     throw new Error("Not authenticated");
   }
 }
+
+// ---- API ----
 
 async function getWorkspaces() {
   return request("/workspaces", { method: "GET" });
@@ -90,57 +84,37 @@ async function getWorkspaceById(workspaceId) {
 
 async function getWorkspaceTasks(workspaceId, orderBy = "") {
   const params = new URLSearchParams({ workspace_id: workspaceId });
-
-  if (orderBy) {
-    params.set("order_by", orderBy);
-  }
-
+  if (orderBy) params.set("order_by", orderBy);
   return request(`/tasks?${params.toString()}`, { method: "GET" });
 }
 
-async function getTaskById(taskId) {
-  return request(`/tasks/${taskId}`, { method: "GET" });
-}
-
 async function createTask(payload) {
-  return request("/tasks", {
-    method: "POST",
-    body: payload,
-  });
+  return request("/tasks", { method: "POST", body: payload });
 }
 
 async function updateTask(taskId, payload) {
-  return request(`/tasks/${taskId}`, {
-    method: "PATCH",
-    body: payload,
-  });
+  return request(`/tasks/${taskId}`, { method: "PATCH", body: payload });
 }
 
 async function deleteTask(taskId) {
-  return request(`/tasks/${taskId}`, {
-    method: "DELETE",
-  });
+  return request(`/tasks/${taskId}`, { method: "DELETE" });
 }
 
 async function resolveActiveWorkspace() {
   const response = await getWorkspaces();
   const workspaces = Array.isArray(response?.workspaces) ? response.workspaces : [];
-
-  if (!workspaces.length) {
-    return null;
-  }
-
+  if (!workspaces.length) return null;
   const storedId = getActiveWorkspaceId();
-  const selected = workspaces.find((workspace) => workspace.id === storedId) || workspaces[0];
-
+  const selected = workspaces.find((w) => w.id === storedId) || workspaces[0];
   setActiveWorkspaceId(selected.id);
-
   try {
     return await getWorkspaceById(selected.id);
   } catch {
     return selected;
   }
 }
+
+// ---- Sidebar ----
 
 function renderSidebar() {
   const sidebar = $("#workspaceSidebar");
@@ -160,20 +134,17 @@ function renderSidebar() {
 
     <nav class="workspace-nav">
       <a class="workspace-nav-link active" href="./workspace_home.html">
-        <span>Overview & Tasks</span>
+        <span>Overview &amp; Tasks</span>
         <span class="workspace-nav-dot"></span>
       </a>
-
       <a class="workspace-nav-link" href="./workspace_switcher.html">
         <span>Workspace manager</span>
         <span class="workspace-nav-dot"></span>
       </a>
-
       <a class="workspace-nav-link" href="./workspace_settings.html">
         <span>Configuration</span>
         <span class="workspace-nav-dot"></span>
       </a>
-
       <button class="workspace-nav-button muted" type="button" disabled>
         <span>Projects</span>
         <span>Later</span>
@@ -200,6 +171,8 @@ function renderSidebar() {
   });
 }
 
+// ---- Workspace header + inline rename ----
+
 function renderWorkspaceHeader(workspace) {
   if (!workspace) return;
 
@@ -220,7 +193,6 @@ function renderWorkspaceHeader(workspace) {
     switcherTrigger.addEventListener("click", () => {
       const titleEl = $("#workspacePageTitle");
       if (!titleEl) return;
-
       if (switcherTrigger.querySelector(".workspace-title-input")) return;
 
       const currentName = currentWorkspace?.name;
@@ -246,10 +218,7 @@ function renderWorkspaceHeader(workspace) {
 
       const doSave = async () => {
         const newName = input.value.trim();
-        if (!newName || newName === currentName) {
-          restoreTitle(currentName);
-          return;
-        }
+        if (!newName || newName === currentName) { restoreTitle(currentName); return; }
         input.disabled = true;
         try {
           await request(`/workspaces/${currentWorkspace.id}`, {
@@ -258,8 +227,8 @@ function renderWorkspaceHeader(workspace) {
           });
           currentWorkspace.name = newName;
           restoreTitle(newName);
-          const sidebarName = document.querySelector("#sidebarWorkspaceName");
           if (sidebarName) sidebarName.textContent = newName;
+          if (minimapName) minimapName.textContent = newName;
           renderFeedback("Workspace renamed successfully.", "success");
         } catch (err) {
           input.disabled = false;
@@ -273,9 +242,7 @@ function renderWorkspaceHeader(workspace) {
         if (e.key === "Escape") { cancelled = true; restoreTitle(currentName); }
         if (e.key === "Enter") { e.preventDefault(); input.blur(); }
       });
-      input.addEventListener("blur", () => {
-        if (!cancelled) doSave();
-      });
+      input.addEventListener("blur", () => { if (!cancelled) doSave(); });
     });
   }
 
@@ -284,8 +251,18 @@ function renderWorkspaceHeader(workspace) {
   });
 }
 
+// ---- Status & priority helpers ----
+
 function getStatusClass(status) {
-  return `task-status task-status-${status || "unknown"}`;
+  return `task-status task-status-${status?.replace(/_/g, "-") || "unknown"}`;
+}
+
+function getPriorityLabel(priority) {
+  if (priority <= 1) return "Highest";
+  if (priority === 2) return "High";
+  if (priority === 3) return "Medium";
+  if (priority === 4) return "Low";
+  return "Lowest";
 }
 
 function getPriorityClass(priority) {
@@ -294,26 +271,20 @@ function getPriorityClass(priority) {
   return "task-priority-low";
 }
 
-function renderTaskStats(total) {
-  const totalEl = $("#taskTotal");
-  const summaryEl = $("#taskSummary");
+// ---- Task count badge ----
 
-  if (totalEl) {
-    totalEl.textContent = String(total);
-  }
-
-  if (summaryEl) {
-    summaryEl.textContent =
-      total === 1 ? "1 task in this workspace" : `${total} tasks in this workspace`;
-  }
+function renderTaskCount(total) {
+  const badge = $("#minimapTaskCount");
+  if (badge) badge.textContent = `${total} task${total === 1 ? "" : "s"}`;
 }
+
+// ---- Task card (compact view) ----
 
 function renderTasks(tasks) {
   const list = $("#taskList");
   const empty = $("#taskEmptyState");
 
   if (!list) return;
-
   list.innerHTML = "";
 
   if (!tasks.length) {
@@ -326,6 +297,7 @@ function renderTasks(tasks) {
   tasks.forEach((task) => {
     const article = document.createElement("article");
     article.className = "task-card";
+    article.dataset.id = task.id;
 
     article.innerHTML = `
       <div class="task-card-head">
@@ -333,315 +305,355 @@ function renderTasks(tasks) {
           <h3 class="task-card-title">${escapeHtml(task.title)}</h3>
           <p class="task-card-description">${escapeHtml(task.description || "No description.")}</p>
         </div>
-
         <div class="task-card-badges">
           <span class="${getStatusClass(task.status)}">${escapeHtml(prettifyStatus(task.status))}</span>
-          <span class="task-priority ${getPriorityClass(task.priority)}">Priority ${escapeHtml(task.priority)}</span>
+          <span class="task-priority ${getPriorityClass(task.priority)}">P${escapeHtml(String(task.priority))}</span>
         </div>
       </div>
-
-      <div class="task-card-meta">
-        <div class="task-meta-item">
-          <span class="task-meta-label">Due</span>
-          <span class="task-meta-value">${escapeHtml(formatDate(task.due_at))}</span>
-        </div>
-
-        <div class="task-meta-item">
-          <span class="task-meta-label">Project</span>
-          <span class="task-meta-value">${task.project_id ? escapeHtml(task.project_id) : "No project"}</span>
-        </div>
-
-        <div class="task-meta-item">
-          <span class="task-meta-label">Created</span>
-          <span class="task-meta-value">${escapeHtml(formatDate(task.created_at))}</span>
-        </div>
-
-        <div class="task-meta-item">
-          <span class="task-meta-label">Updated</span>
-          <span class="task-meta-value">${escapeHtml(formatDate(task.updated_at))}</span>
-        </div>
-
-        ${
-          task.completed_at
-            ? `
-              <div class="task-meta-item">
-                <span class="task-meta-label">Completed</span>
-                <span class="task-meta-value">${escapeHtml(formatDate(task.completed_at))}</span>
-              </div>
-            `
-            : ""
-        }
-      </div>
-
-      <div class="task-card-actions">
-        <button class="workspace-mini-btn" type="button" data-action="edit" data-id="${task.id}">
-          Edit
-        </button>
-        <button class="workspace-mini-btn muted" type="button" data-action="delete" data-id="${task.id}">
-          Delete
-        </button>
+      <div class="task-card-footer">
+        <span class="task-card-due">Due ${escapeHtml(formatDate(task.due_at))}</span>
+        <span class="task-card-expand-hint">Click to open →</span>
       </div>
     `;
 
+    article.addEventListener("click", () => openTaskDetail(task));
     list.appendChild(article);
   });
-
-  attachTaskCardEvents();
 }
 
-function attachTaskCardEvents() {
-  document.querySelectorAll("[data-action='edit']").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const taskId = button.dataset.id;
-      await openEditTaskModal(taskId);
-    });
-  });
+// ---- Task detail panel ----
 
-  document.querySelectorAll("[data-action='delete']").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const taskId = button.dataset.id;
-      await handleDeleteTask(taskId);
-    });
-  });
+function buildDetailSnapshot() {
+  return {
+    title: $("#detailTitle")?.value || "",
+    description: $("#detailDescription")?.value || "",
+    status: $("#detailStatus")?.value || "",
+    priority: $("#detailPriority")?.value || "",
+    due_at: $("#detailDueAt")?.value || "",
+  };
 }
 
-function openTaskModal(mode = "create", task = null) {
-  const overlay = $("#taskModalOverlay");
-  const title = $("#taskModalTitle");
-  const submitBtn = $("#taskSubmitBtn");
-  const form = $("#taskForm");
-  const statusRow = $("#taskStatusRow");
-  const completedHint = $("#taskCompletedHint");
+function hasDetailChanges() {
+  if (!detailSnapshot) return false;
+  const current = buildDetailSnapshot();
+  return Object.keys(detailSnapshot).some((key) => current[key] !== detailSnapshot[key]);
+}
 
-  if (!overlay || !form) return;
+function updateDetailSaveBtn() {
+  const saveBtn = $("#detailSaveBtn");
+  if (!saveBtn) return;
+  saveBtn.classList.toggle("hidden", !hasDetailChanges());
+}
 
-  form.reset();
-  $("#taskError").classList.remove("show");
-  $("#taskError").textContent = "";
+function openTaskDetail(task) {
+  const overlay = $("#taskDetailOverlay");
+  if (!overlay) return;
 
-  $("#taskId").value = "";
-  $("#taskTitle").value = "";
-  $("#taskDescription").value = "";
-  $("#taskPriority").value = "3";
-  $("#taskDueAt").value = "";
-  $("#taskProjectId").value = "";
-  $("#taskStatus").value = "to do";
+  currentDetailTask = task;
 
-  if (mode === "create") {
-    title.textContent = "Create new task";
-    submitBtn.textContent = "Create task";
-    statusRow.classList.add("hidden");
-    completedHint.classList.add("hidden");
-  } else {
-    title.textContent = "Edit task";
-    submitBtn.textContent = "Save changes";
-    statusRow.classList.remove("hidden");
+  // Clear error
+  const errorEl = $("#detailError");
+  if (errorEl) { errorEl.textContent = ""; errorEl.classList.remove("show"); }
 
-    $("#taskId").value = task.id;
-    $("#taskTitle").value = task.title || "";
-    $("#taskDescription").value = task.description || "";
-    $("#taskPriority").value = String(task.priority ?? 3);
-    $("#taskDueAt").value = task.due_at || "";
-    $("#taskProjectId").value = task.project_id || "";
-    $("#taskStatus").value = task.status || "to do";
-
-    if (task.completed_at) {
-      completedHint.textContent = `Completed on ${formatDate(task.completed_at)}`;
-      completedHint.classList.remove("hidden");
-    } else {
-      completedHint.classList.add("hidden");
-      completedHint.textContent = "";
-    }
+  // Badges
+  const badges = $("#detailBadges");
+  if (badges) {
+    badges.innerHTML = `
+      <span class="${getStatusClass(task.status)}">${escapeHtml(prettifyStatus(task.status))}</span>
+      <span class="task-priority ${getPriorityClass(task.priority)}">
+        Priority ${escapeHtml(String(task.priority))} · ${escapeHtml(getPriorityLabel(task.priority))}
+      </span>
+    `;
   }
 
-  overlay.dataset.mode = mode;
+  // Fields
+  const titleEl = $("#detailTitle");
+  const descEl = $("#detailDescription");
+  const statusEl = $("#detailStatus");
+  const priorityEl = $("#detailPriority");
+  const dueEl = $("#detailDueAt");
+
+  if (titleEl) titleEl.value = task.title || "";
+  if (descEl) descEl.value = task.description || "";
+  if (statusEl) statusEl.value = task.status || "to_do";
+  if (priorityEl) priorityEl.value = String(task.priority ?? 3);
+  if (dueEl) dueEl.value = task.due_at || "";
+
+  const createdEl = $("#detailCreatedAt");
+  const updatedEl = $("#detailUpdatedAt");
+  const completedRow = $("#detailCompletedRow");
+  const completedEl = $("#detailCompletedAt");
+
+  if (createdEl) createdEl.textContent = formatDate(task.created_at);
+  if (updatedEl) updatedEl.textContent = formatDate(task.updated_at);
+
+  if (task.completed_at && completedRow && completedEl) {
+    completedEl.textContent = formatDate(task.completed_at);
+    completedRow.style.display = "";
+  } else if (completedRow) {
+    completedRow.style.display = "none";
+  }
+
+  overlay.dataset.taskId = task.id;
+  detailSnapshot = buildDetailSnapshot();
+  $("#detailSaveBtn")?.classList.add("hidden");
+
   overlay.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
 }
 
-function closeTaskModal() {
+function closeTaskDetail() {
+  $("#taskDetailOverlay")?.classList.add("hidden");
+  document.body.style.overflow = "";
+  detailSnapshot = null;
+  currentDetailTask = null;
+}
+
+async function saveTaskDetail() {
+  const overlay = $("#taskDetailOverlay");
+  const taskId = overlay?.dataset.taskId;
+  if (!taskId) return;
+
+  const errorEl = $("#detailError");
+  errorEl?.classList.remove("show");
+
+  const title = $("#detailTitle")?.value.trim() || "";
+  const description = $("#detailDescription")?.value.trim() || "";
+  const status = $("#detailStatus")?.value || "";
+  const priority = Number($("#detailPriority")?.value);
+  const due_at = $("#detailDueAt")?.value || "";
+
+  if (title.length < 2) {
+    if (errorEl) { errorEl.textContent = "Title must be at least 2 characters."; errorEl.classList.add("show"); }
+    return;
+  }
+  if (!due_at) {
+    if (errorEl) { errorEl.textContent = "Due date is required."; errorEl.classList.add("show"); }
+    return;
+  }
+
+  const saveBtn = $("#detailSaveBtn");
+  setLoading(saveBtn, true);
+
+  try {
+    await updateTask(taskId, {
+      title,
+      description,
+      status,
+      priority,
+      due_at,
+      project_id: currentDetailTask?.project_id || null,
+      workspace_id: currentWorkspace.id,
+    });
+    renderFeedback("Task updated successfully.", "success");
+    closeTaskDetail();
+    await loadTasks();
+  } catch (err) {
+    if (errorEl) { errorEl.textContent = err.message || "Could not save task."; errorEl.classList.add("show"); }
+  } finally {
+    setLoading(saveBtn, false);
+  }
+}
+
+async function deleteTaskFromDetail() {
+  const overlay = $("#taskDetailOverlay");
+  const taskId = overlay?.dataset.taskId;
+  if (!taskId) return;
+
+  if (!window.confirm("Are you sure you want to delete this task?")) return;
+
+  try {
+    await deleteTask(taskId);
+    renderFeedback("Task deleted successfully.", "success");
+    closeTaskDetail();
+    await loadTasks();
+  } catch (err) {
+    renderFeedback(err.message || "Could not delete the task.");
+  }
+}
+
+// ---- Create task modal ----
+
+function openCreateTaskModal() {
   const overlay = $("#taskModalOverlay");
   if (!overlay) return;
 
-  overlay.classList.add("hidden");
+  const taskError = $("#taskError");
+  if (taskError) { taskError.textContent = ""; taskError.classList.remove("show"); }
+
+  const titleEl = $("#taskTitle");
+  const descEl = $("#taskDescription");
+  const priorityEl = $("#taskPriority");
+  const dueEl = $("#taskDueAt");
+  const projectEl = $("#taskProjectId");
+
+  if (titleEl) titleEl.value = "";
+  if (descEl) descEl.value = "";
+  if (priorityEl) priorityEl.value = "3";
+  if (dueEl) dueEl.value = "";
+  if (projectEl) projectEl.value = "";
+
+  overlay.classList.remove("hidden");
+  titleEl?.focus();
 }
 
-async function openEditTaskModal(taskId) {
-  try {
-    clearFeedback();
-    const task = await getTaskById(taskId);
-    openTaskModal("edit", task);
-  } catch (error) {
-    renderFeedback(error.message || "Could not load task details.");
-  }
-}
-
-function normalizeProjectId(value) {
-  const trimmed = value.trim();
-  return trimmed ? trimmed : null;
-}
-
-function buildCreatePayload() {
-  return {
-    title: $("#taskTitle").value.trim(),
-    description: $("#taskDescription").value.trim(),
-    priority: Number($("#taskPriority").value),
-    due_at: $("#taskDueAt").value,
-    project_id: normalizeProjectId($("#taskProjectId").value),
-    workspace_id: currentWorkspace.id,
-  };
-}
-
-function buildUpdatePayload() {
-  return {
-    title: $("#taskTitle").value.trim(),
-    description: $("#taskDescription").value.trim(),
-    status: $("#taskStatus").value,
-    priority: Number($("#taskPriority").value),
-    due_at: $("#taskDueAt").value,
-    project_id: normalizeProjectId($("#taskProjectId").value),
-    workspace_id: currentWorkspace.id,
-  };
-}
-
-function validateTaskPayload(payload, isEdit = false) {
-  if (!payload.title || payload.title.length < 2) {
-    return "Task title must contain at least 2 characters.";
-  }
-
-  if (!payload.description) {
-    return "Task description is required.";
-  }
-
-  if (!payload.due_at) {
-    return "Due date is required.";
-  }
-
-  if (!Number.isInteger(payload.priority) || payload.priority < 1) {
-    return "Priority must be a valid number.";
-  }
-
-  if (isEdit && !payload.status) {
-    return "Task status is required while editing.";
-  }
-
-  return null;
+function closeCreateTaskModal() {
+  $("#taskModalOverlay")?.classList.add("hidden");
 }
 
 async function handleTaskSubmit(event) {
   event.preventDefault();
 
-  const overlay = $("#taskModalOverlay");
-  const mode = overlay?.dataset.mode || "create";
   const errorEl = $("#taskError");
   const submitBtn = $("#taskSubmitBtn");
 
-  errorEl.classList.remove("show");
-  errorEl.textContent = "";
+  errorEl?.classList.remove("show");
+  if (errorEl) errorEl.textContent = "";
 
-  const payload = mode === "edit" ? buildUpdatePayload() : buildCreatePayload();
-  const validationError = validateTaskPayload(payload, mode === "edit");
+  const payload = {
+    title: $("#taskTitle")?.value.trim() || "",
+    description: $("#taskDescription")?.value.trim() || "",
+    priority: Number($("#taskPriority")?.value),
+    due_at: $("#taskDueAt")?.value || "",
+    project_id: $("#taskProjectId")?.value.trim() || null,
+    workspace_id: currentWorkspace.id,
+  };
 
-  if (validationError) {
-    errorEl.textContent = validationError;
-    errorEl.classList.add("show");
+  if (payload.title.length < 2) {
+    if (errorEl) { errorEl.textContent = "Title must be at least 2 characters."; errorEl.classList.add("show"); }
+    return;
+  }
+  if (!payload.description) {
+    if (errorEl) { errorEl.textContent = "Description is required."; errorEl.classList.add("show"); }
+    return;
+  }
+  if (!payload.due_at) {
+    if (errorEl) { errorEl.textContent = "Due date is required."; errorEl.classList.add("show"); }
     return;
   }
 
   setLoading(submitBtn, true);
 
   try {
-    if (mode === "edit") {
-      const taskId = $("#taskId").value;
-      await updateTask(taskId, payload);
-      renderFeedback("Task updated successfully.", "success");
-    } else {
-      await createTask(payload);
-      renderFeedback("Task created successfully.", "success");
-    }
-
-    closeTaskModal();
+    await createTask(payload);
+    renderFeedback("Task created successfully.", "success");
+    closeCreateTaskModal();
     await loadTasks();
-  } catch (error) {
-    errorEl.textContent = error.message || "Something went wrong while saving the task.";
-    errorEl.classList.add("show");
+  } catch (err) {
+    if (errorEl) { errorEl.textContent = err.message || "Something went wrong."; errorEl.classList.add("show"); }
   } finally {
     setLoading(submitBtn, false);
   }
 }
 
-async function handleDeleteTask(taskId) {
-  const confirmed = window.confirm("Are you sure you want to delete this task?");
-
-  if (!confirmed) return;
-
-  try {
-    await deleteTask(taskId);
-    renderFeedback("Task deleted successfully.", "success");
-    await loadTasks();
-  } catch (error) {
-    renderFeedback(error.message || "Could not delete the task.");
-  }
-}
+// ---- Load tasks ----
 
 async function loadTasks() {
   if (!currentWorkspace) return;
-
   try {
     clearFeedback();
-
     const response = await getWorkspaceTasks(currentWorkspace.id, currentOrder);
     currentTasks = Array.isArray(response?.tasks) ? response.tasks : [];
-
-    renderTaskStats(response?.total ?? currentTasks.length);
+    renderTaskCount(response?.total ?? currentTasks.length);
     renderTasks(currentTasks);
-  } catch (error) {
-    renderFeedback(error.message || "Could not load workspace tasks.");
+  } catch (err) {
+    renderFeedback(err.message || "Could not load workspace tasks.");
   }
 }
 
-function bindControls() {
-  $("#openCreateTaskBtn")?.addEventListener("click", () => {
-    openTaskModal("create");
-  });
+// ---- Bind controls ----
 
-  $("#taskModalCloseBtn")?.addEventListener("click", closeTaskModal);
-  $("#taskModalCancelBtn")?.addEventListener("click", closeTaskModal);
-
-  $("#taskModalOverlay")?.addEventListener("click", (event) => {
-    if (event.target.id === "taskModalOverlay") {
-      closeTaskModal();
-    }
-  });
-
-  $("#taskForm")?.addEventListener("submit", handleTaskSubmit);
-
-  $("#taskOrderSelect")?.addEventListener("change", async (event) => {
-    currentOrder = event.target.value;
-    await loadTasks();
+function setActiveOrderBtn(order) {
+  document.querySelectorAll(".workspace-tree-item[data-order]").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.order === order);
   });
 }
 
+function bindControls() {
+  // Create modal
+  $("#minimapNewTaskBtn")?.addEventListener("click", openCreateTaskModal);
+  $("#taskModalCloseBtn")?.addEventListener("click", closeCreateTaskModal);
+  $("#taskModalCancelBtn")?.addEventListener("click", closeCreateTaskModal);
+  $("#taskModalOverlay")?.addEventListener("click", (e) => {
+    if (e.target.id === "taskModalOverlay") closeCreateTaskModal();
+  });
+  $("#taskForm")?.addEventListener("submit", handleTaskSubmit);
+
+  // Minimap ordering buttons
+  document.querySelectorAll(".workspace-tree-item[data-order]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      currentOrder = btn.dataset.order;
+      setActiveOrderBtn(currentOrder);
+      await loadTasks();
+    });
+  });
+
+  // Detail panel
+  $("#detailCloseBtn")?.addEventListener("click", closeTaskDetail);
+  $("#detailSaveBtn")?.addEventListener("click", saveTaskDetail);
+  $("#detailDeleteBtn")?.addEventListener("click", deleteTaskFromDetail);
+  $("#taskDetailOverlay")?.addEventListener("click", (e) => {
+    if (e.target.id === "taskDetailOverlay") closeTaskDetail();
+  });
+
+  // Change detection
+  ["detailTitle", "detailDescription", "detailStatus", "detailPriority", "detailDueAt"].forEach((id) => {
+    const el = $(`#${id}`);
+    el?.addEventListener("input", updateDetailSaveBtn);
+    el?.addEventListener("change", updateDetailSaveBtn);
+  });
+
+  // Also update badges live when status/priority changes
+  $("#detailStatus")?.addEventListener("change", updateDetailBadges);
+  $("#detailPriority")?.addEventListener("change", updateDetailBadges);
+
+  // Escape key
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (!$("#taskDetailOverlay")?.classList.contains("hidden")) { closeTaskDetail(); return; }
+    if (!$("#taskModalOverlay")?.classList.contains("hidden")) { closeCreateTaskModal(); return; }
+  });
+}
+
+function updateDetailBadges() {
+  const badges = $("#detailBadges");
+  if (!badges || !currentDetailTask) return;
+
+  const status = $("#detailStatus")?.value || currentDetailTask.status;
+  const priority = Number($("#detailPriority")?.value ?? currentDetailTask.priority);
+
+  badges.innerHTML = `
+    <span class="${getStatusClass(status)}">${escapeHtml(prettifyStatus(status))}</span>
+    <span class="task-priority ${getPriorityClass(priority)}">
+      Priority ${escapeHtml(String(priority))} · ${escapeHtml(getPriorityLabel(priority))}
+    </span>
+  `;
+}
+
+// ---- Boot ----
+
 async function boot() {
-  await requireAuth();
   renderSidebar();
   bindControls();
 
   currentWorkspace = await resolveActiveWorkspace();
 
   if (!currentWorkspace) {
-    renderFeedback("No workspace available yet. Create one first from the workspace manager.");
+    renderFeedback("No workspace available yet. Create one from the workspace manager.");
     $("#taskEmptyState")?.classList.add("show");
     return;
   }
 
   renderWorkspaceHeader(currentWorkspace);
+  setActiveOrderBtn("");
   await loadTasks();
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
   try {
+    await requireAuth();
     await boot();
   } catch {
-    // Auth redirect already in progress — do nothing
+    // Auth redirect already in progress
   }
 });
