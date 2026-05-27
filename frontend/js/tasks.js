@@ -375,7 +375,7 @@ function openTaskDetail(task) {
 
   if (titleEl) titleEl.value = task.title || "";
   if (descEl) descEl.value = task.description || "";
-  if (statusEl) statusEl.value = task.status || "to_do";
+  if (statusEl) statusEl.value = task.status || "to do";
   if (priorityEl) priorityEl.value = String(task.priority ?? 3);
   if (dueEl) dueEl.value = task.due_at || "";
 
