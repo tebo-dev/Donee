@@ -13,7 +13,7 @@ class TaskCreate(BaseModel):
 
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
-    title: str = Field(min_length=2, max_length=100)
+    title: str = Field(min_length=2, max_length=80)
     description: str
     priority: int
     due_at: date
@@ -26,7 +26,7 @@ class TaskUpdate(BaseModel):
 
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
-    title: str = Field(min_length=2, max_length=100)
+    title: str = Field(min_length=2, max_length=80)
     description: str
     status: str | None
     priority: int
