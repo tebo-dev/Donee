@@ -240,3 +240,50 @@ def can_delete_project(role: str) -> bool:
     if role == "owner" or role == "admin":
         return True
     return False
+
+
+# Tag permissions.
+
+
+def can_create_tag(role: str) -> bool:
+    """Determines if an user is allowed to create a tag."""
+
+    if role == "owner" or role == "admin":
+        return True
+    return False
+
+
+def can_view_tag(role: str) -> bool:
+    """Determines if an user is allowed to visualize a tag."""
+
+    roles = ["owner", "admin", "member", "viewer"]
+
+    if role in roles:
+        return True
+    return False
+
+
+def can_assign_tag(role: str) -> bool:
+    """Determines if an user is allowed to assign a tag."""
+
+    roles = ["owner", "admin", "member"]
+
+    if role in roles:
+        return True
+    return False
+
+
+def can_edit_tag(role: str) -> bool:
+    """Determines if an user is allowed to edit a tag."""
+
+    if role == "owner" or role == "admin":
+        return True
+    return False
+
+
+def can_delete_tag(role: str) -> bool:
+    """Determines if an user is allowed to delete a tag."""
+
+    if role == "owner" or role == "admin":
+        return True
+    return False
