@@ -8,7 +8,8 @@ class ExistingWorkspaceName(DomainError):
 
 
 class NotAuthorized(DomainError):
-    """Used when an users tries to edit a workspace without authorization."""
+    """Used when an users tries to edit an element inside a workspace
+    without authorization."""
 
 
 class WorkspaceNotFound(DomainError):
