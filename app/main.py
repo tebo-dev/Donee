@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.routes.auth_routes import router as auth_routher
 from app.api.routes.password_reset_routes import router as password_reset_router
+from app.api.routes.tag_routes import router as tag_router
 from app.api.routes.task_routes import router as task_router
 from app.api.routes.workspace_routes import router as workspace_router
 from app.core.domain_errors.auth_domain_errors import (
@@ -17,6 +18,12 @@ from app.core.domain_errors.auth_domain_errors import (
 )
 from app.core.domain_errors.base import DomainError
 from app.core.domain_errors.project_domain_errors import ProjectNotFound
+from app.core.domain_errors.tag_domain_errors import (
+    AlreadyAssigned,
+    ExistingColor,
+    ExistingName,
+    TagNotFound,
+)
 from app.core.domain_errors.task_domain_errors import (
     InvalidOrderParameter,
     TaskNotFound,
@@ -44,6 +51,7 @@ app.include_router(auth_routher, prefix="/auth", tags=["auth"])
 app.include_router(password_reset_router, prefix="/auth", tags=["auth"])
 app.include_router(workspace_router, tags=["workspace"])
 app.include_router(task_router, tags=["task"])
+app.include_router(tag_router, tags=["tag"])
 
 
 @app.exception_handler(DomainError)
@@ -104,5 +112,23 @@ async def domain_error_handler(request: Request, exc: DomainError):
     elif isinstance(exc, ProjectNotFound):
         detail = "Project not found."
         status_code = status.HTTP_404_NOT_FOUND
+
+    # Tag Domain Errors:
+
+    elif isinstance(exc, ExistingName):
+        detail = "Tag name already taken."
+        status_code = status.HTTP_409_CONFLICT
+
+    elif isinstance(exc, ExistingColor):
+        detail = "Tag color already taken."
+        status_code = status.HTTP_409_CONFLICT
+
+    elif isinstance(exc, TagNotFound):
+        detail = "Tag not found."
+        status_code = status.HTTP_404_NOT_FOUND
+
+    elif isinstance(exc, AlreadyAssigned):
+        detail = "Tag already assigned to task."
+        status_code = status.HTTP_409_CONFLICT
 
     return JSONResponse(status_code=status_code, content={"detail": detail})
