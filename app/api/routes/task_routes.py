@@ -64,7 +64,7 @@ def update_user_task(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    """Update an specific task."""
+    """Update a specific task."""
 
     updated_task = update_task(db, task_id, user.id, payload)
     return updated_task
@@ -74,7 +74,7 @@ def update_user_task(
 def delete_user_task(
     task_id: UUID, db: Session = Depends(get_db), user: User = Depends(get_current_user)
 ):
-    """Delete an specific task."""
+    """Delete a specific task."""
 
     delete_task(db, task_id, user.id)
     return {"message": "Deleted successfully."}
