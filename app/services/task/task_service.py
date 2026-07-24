@@ -137,18 +137,15 @@ def update_task(
     ):
         raise NotAuthorized()
 
-    if task_update.status == "done":
-        task.completed_at = date.today()
-    else:
-        task.completed_at = None
+    updated_data = task_update.model_dump(exclude_unset=True)
 
-    task.title = task_update.title
-    task.description = task_update.description
-    task.status = task_update.status
-    task.priority = task_update.priority
-    task.due_at = task_update.due_at
-    task.project_id = task_update.project_id
-    task.workspace_id = task_update.workspace_id
+    for field, value in updated_data.items():
+        setattr(task, field, value)
+
+    if updated_data.get("status") == "done":
+        task.completed_at = date.today()
+    elif "status" in updated_data:
+        task.completed_at = None
 
     db.commit()
 

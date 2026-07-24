@@ -21,7 +21,7 @@ class WorkspaceUpdate(BaseModel):
 
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
-    name: str = Field(min_length=2, max_length=50)
+    name: str | None = Field(default=None, min_length=2, max_length=50)
 
 
 # Responses

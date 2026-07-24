@@ -118,10 +118,16 @@ def edit_tag(db: Session, user_id: UUID, tag_id: UUID, tag_edit: TagEdit) -> Tag
     if not tag:
         raise TagNotFound()
 
-    if validate_tag_name(db, tag_edit.name, tag_edit.workspace_id):
+    updated_data = tag_edit.model_dump(exclude_unset=True)
+
+    if "name" in updated_data and validate_tag_name(
+        db, updated_data.get("name"), tag.workspace_id
+    ):
         raise ExistingName()
 
-    if validate_tag_color(db, tag_edit.color, tag_edit.workspace_id):
+    if "color" in updated_data and validate_tag_color(
+        db, updated_data.get("color"), tag.workspace_id
+    ):
         raise ExistingColor()
 
     curr_member = get_member(db, user_id, tag.workspace_id)
@@ -129,8 +135,8 @@ def edit_tag(db: Session, user_id: UUID, tag_id: UUID, tag_edit: TagEdit) -> Tag
     if not curr_member or not can_edit_tag(curr_member.role):
         raise NotAuthorized()
 
-    tag.name = tag_edit.name
-    tag.color = tag_edit.color
+    for field, value in updated_data.items():
+        setattr(tag, field, value)
 
     db.commit()
 

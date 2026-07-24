@@ -29,11 +29,11 @@ class TaskUpdate(BaseModel):
 
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
-    title: str = Field(min_length=2, max_length=80)
+    title: str | None = Field(default=None, min_length=2, max_length=80)
     description: str
     status: str | None
-    priority: int
-    due_at: date
+    priority: int | None
+    due_at: date | None
     tags: list[TagAssign] | None
     project_id: UUID | None
     workspace_id: UUID

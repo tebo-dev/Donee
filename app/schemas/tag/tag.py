@@ -23,8 +23,8 @@ class TagEdit(BaseModel):
 
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
-    workspace_id: UUID
-    name: str = Field(min_length=2, max_length=80)
+    workspace_id: UUID | None
+    name: str | None = Field(default=None, min_length=2, max_length=80)
     color: str | None = Field(default=None, min_length=4, max_length=7)
 
 

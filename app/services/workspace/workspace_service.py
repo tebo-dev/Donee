@@ -135,12 +135,16 @@ def rename_workspace(
     """Update workspace name."""
 
     workspace = get_workspace_by_id(db, workspace_id)
+    duplicate = get_workspace_by_name(db, user_id, update.name)
 
     if workspace.owner_id != user_id:
         raise NotAuthorized()
-    if get_workspace_by_name(db, user_id, update.name):
+    if duplicate and duplicate.id != workspace.id:
         raise ExistingWorkspaceName()
 
-    workspace.name = update.name
+    updated_data = update.model_dump(exclude_unset=True)
+
+    for field, value in updated_data.items():
+        setattr(workspace, field, value)
 
     db.commit()
