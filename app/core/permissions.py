@@ -263,13 +263,31 @@ def can_view_tag(role: str) -> bool:
     return False
 
 
-def can_assign_tag(role: str) -> bool:
+def can_assign_tag(
+    role: str, created_by: str | None, assignee_id: str | None, current_user_id: str
+) -> bool:
     """Determines if an user is allowed to assign a tag."""
 
-    roles = ["owner", "admin", "member"]
-
-    if role in roles:
+    if role == "owner" or role == "admin":
         return True
+
+    if current_user_id == created_by or current_user_id == assignee_id:
+        return True
+
+    return False
+
+
+def can_unassign_tag(
+    role: str, created_by: str | None, assignee_id: str | None, current_user_id: str
+) -> bool:
+    """Determines if an user is allowed to assign a tag."""
+
+    if role == "owner" or role == "admin":
+        return True
+
+    if current_user_id == created_by or current_user_id == assignee_id:
+        return True
+
     return False
 
 
