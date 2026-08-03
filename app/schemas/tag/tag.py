@@ -28,12 +28,13 @@ class TagEdit(BaseModel):
     color: str | None = Field(default=None, min_length=4, max_length=7)
 
 
-class TagAssign(BaseModel):
+class TagPatch(BaseModel):
     """Schema for tag assignment."""
 
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
-    id: UUID
+    add_tag_ids: list[UUID] = Field(default_factory=list)
+    remove_tag_ids: list[UUID] = Field(default_factory=list)
 
 
 # Responses

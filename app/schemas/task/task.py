@@ -5,7 +5,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.schemas.tag.tag import TagAssign, TagListOut
+from app.schemas.tag.tag import TagListOut, TagPatch
 
 # Requests
 
@@ -19,7 +19,7 @@ class TaskCreate(BaseModel):
     description: str
     priority: int
     due_at: date
-    tags: list[TagAssign] | None
+    tags: TagPatch | None
     project_id: UUID | None
     workspace_id: UUID
 
@@ -34,7 +34,7 @@ class TaskUpdate(BaseModel):
     status: str | None
     priority: int | None
     due_at: date | None
-    tags: list[TagAssign] | None
+    tags: TagPatch | None
     project_id: UUID | None
     workspace_id: UUID
 
@@ -53,7 +53,7 @@ class TaskOut(BaseModel):
     status: str
     priority: int
     due_at: date
-    tags: TagListOut | None
+    tags: TagListOut | None = Field(default_factory=list)
     completed_at: date | None
     workspace_id: UUID
     project_id: UUID | None

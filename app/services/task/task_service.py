@@ -7,21 +7,27 @@ from sqlalchemy import case, select
 from sqlalchemy.orm import Session
 
 from app.core.domain_errors.project_domain_errors import ProjectNotFound
+from app.core.domain_errors.tag_domain_errors import TagNotFound
 from app.core.domain_errors.task_domain_errors import (
     InvalidOrderParameter,
     TaskNotFound,
 )
 from app.core.domain_errors.workspace_domain_errors import NotAuthorized
 from app.core.permissions import (
+    can_assign_tag,
     can_create_task,
     can_delete_task,
     can_edit_project,
     can_edit_task,
+    can_unassign_tag,
 )
 from app.models.project.project import Project
+from app.models.tag.tag import Tag
 from app.models.task.task import Task
+from app.models.task.task_tag import TaskTag
 from app.models.workspace.workspace_member import WorkspaceMember
-from app.schemas.task.task import TaskCreate, TaskListOut, TaskUpdate
+from app.schemas.tag.tag import TagListOut
+from app.schemas.task.task import TaskCreate, TaskListOut, TaskOut, TaskUpdate
 
 # Helpers
 
@@ -48,6 +54,72 @@ def validate_project(db: Session, project_id: UUID, workspace_id: UUID) -> bool:
     if record:
         return True
     return False
+
+
+def add_tag_to_task(
+    db: Session, curr_member: WorkspaceMember, task: Task, tag_id: UUID
+) -> None:
+    """Add a tag to task tags table."""
+
+    if not can_assign_tag(
+        curr_member.role, task.created_by, task.assignee_id, curr_member.user_id
+    ):
+        raise NotAuthorized()
+
+    new_tag = TaskTag(
+        task_id=task.id,
+        tag_id=tag_id,
+    )
+
+    db.add(new_tag)
+    db.commit()
+
+
+def remove_tag_from_task(
+    db: Session, curr_member: WorkspaceMember, task: Task, tag_id: UUID
+) -> None:
+    """Add a tag to task tags table."""
+
+    stmt = select(TaskTag).where(
+        TaskTag.task_id == task.id and TaskTag.tag_id == tag_id
+    )
+    tag = db.execute(stmt).scalars().first()
+
+    if not tag:
+        raise TagNotFound()
+
+    if not can_unassign_tag(
+        curr_member.role, task.created_by, task.assignee_id, curr_member.user_id
+    ):
+        raise NotAuthorized()
+
+    db.delete(tag)
+    db.commit()
+
+
+def get_task_tags(db: Session, task_id: UUID, user_id: UUID) -> TagListOut:
+    """Return tags belonging to a task."""
+
+    stmt = select(Task).where(Task.id == task_id)
+    task = db.execute(stmt).scalars().first()
+
+    if not task:
+        raise TaskNotFound()
+
+    curr_member = get_member(db, user_id, task.workspace_id)
+
+    if not curr_member:
+        raise NotAuthorized()
+
+    stmt = select(TaskTag.tag_id).where(TaskTag.task_id == task_id)
+    tags_ids = db.execute(stmt).scalars().all()
+
+    if not tags_ids:
+        return []
+
+    task_tags = db.execute(select(Tag).where(Tag.id.in_(tags_ids))).scalars().all()
+
+    return TagListOut(tags=task_tags, total=len(task_tags))
 
 
 # Main service
@@ -82,7 +154,19 @@ def create_task(db: Session, user_id: UUID, task_data: TaskCreate) -> Task:
     db.commit()
     db.refresh(new_task)
 
-    return new_task
+    if task_data.tags:
+        patch = task_data.tags
+
+        for tag_id in patch.add_tag_ids:
+            add_tag_to_task(db, curr_member, new_task, tag_id)
+
+        for tag_id in patch.remove_tag_ids:
+            remove_tag_from_task(db, curr_member, new_task, tag_id)
+
+    new_task_schema = TaskOut.model_validate(new_task)
+    new_task_schema.tags = get_task_tags(db, new_task.id, user_id)
+
+    return new_task_schema
 
 
 def get_workspace_tasks(db: Session, user_id: UUID, workspace_id: UUID) -> TaskListOut:
@@ -95,9 +179,15 @@ def get_workspace_tasks(db: Session, user_id: UUID, workspace_id: UUID) -> TaskL
 
     stmt = select(Task).where(Task.workspace_id == workspace_id)
     workspace_tasks = db.execute(stmt).scalars().all()
+    task_schemas = []
+
+    for task in workspace_tasks:
+        task_schema = TaskOut.model_validate(task)
+        task_schema.tags = get_task_tags(db, task.id, user_id)
+        task_schemas.append(task_schema)
 
     return TaskListOut(
-        tasks=workspace_tasks,
+        tasks=task_schemas,
         total=len(workspace_tasks),
     )
 
@@ -115,6 +205,9 @@ def get_task_for_user(db: Session, task_id: UUID, user_id: UUID) -> Task:
 
     if not curr_member:
         raise NotAuthorized()
+
+    task_schema = TaskOut.model_validate(task)
+    task_schema.tags = get_task_tags(db, task.id, user_id)
 
     return task
 
@@ -137,10 +230,20 @@ def update_task(
     ):
         raise NotAuthorized()
 
+    if task_update.tags:
+        patch = task_update.tags
+
+        for tag_id in patch.add_tag_ids:
+            add_tag_to_task(db, curr_member, task, tag_id)
+
+        for tag_id in patch.remove_tag_ids:
+            remove_tag_from_task(db, curr_member, task, tag_id)
+
     updated_data = task_update.model_dump(exclude_unset=True)
 
     for field, value in updated_data.items():
-        setattr(task, field, value)
+        if field != "tags":
+            setattr(task, field, value)
 
     if updated_data.get("status") == "done":
         task.completed_at = date.today()
