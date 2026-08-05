@@ -27,7 +27,13 @@ from app.models.task.task import Task
 from app.models.task.task_tag import TaskTag
 from app.models.workspace.workspace_member import WorkspaceMember
 from app.schemas.tag.tag import TagListOut
-from app.schemas.task.task import TaskCreate, TaskListOut, TaskOut, TaskUpdate
+from app.schemas.task.task import (
+    TaskCreate,
+    TaskListOut,
+    TaskOut,
+    TaskPreview,
+    TaskUpdate,
+)
 
 # Helpers
 
@@ -182,7 +188,7 @@ def get_workspace_tasks(db: Session, user_id: UUID, workspace_id: UUID) -> TaskL
     task_schemas = []
 
     for task in workspace_tasks:
-        task_schema = TaskOut.model_validate(task)
+        task_schema = TaskPreview.model_validate(task)
         task_schema.tags = get_task_tags(db, task.id, user_id)
         task_schemas.append(task_schema)
 

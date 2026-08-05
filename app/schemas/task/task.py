@@ -42,6 +42,19 @@ class TaskUpdate(BaseModel):
 # Responses
 
 
+class TaskPreview(BaseModel):
+    """Schema for returning a task preview."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    title: str
+    status: str
+    priority: int
+    due_at: date
+    tags: TagListOut | None = Field(default_factory=list)
+
+
 class TaskOut(BaseModel):
     """Schema for returning a task for the frontend."""
 
@@ -62,9 +75,9 @@ class TaskOut(BaseModel):
 
 
 class TaskListOut(BaseModel):
-    """Schema for returning a list of tasks to the frontend."""
+    """Schema for returning a list of task previews to the frontend."""
 
     model_config = ConfigDict(from_attributes=True)
 
-    tasks: list[TaskOut]
+    tasks: list[TaskPreview]
     total: int
