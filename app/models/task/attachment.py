@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Text, func
+from sqlalchemy import BigInteger, CheckConstraint, DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -30,26 +30,44 @@ class Attachment(Base):
         PG_UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE")
     )
 
-    filename: Mapped[str] = mapped_column(
-        Text,
+    attachment_type: Mapped[str] = mapped_column(
+        String(4),
         nullable=False,
+    )
+
+    original_filename: Mapped[str] = mapped_column(
+        String(155),
     )
 
     storage_key: Mapped[str] = mapped_column(
-        Text,
-        nullable=False,
+        String(114),
     )
 
     content_type: Mapped[str] = mapped_column(
-        Text,
+        String(14),
     )
 
     size_bytes: Mapped[int] = mapped_column(
         BigInteger,
     )
 
+    url: Mapped[str] = mapped_column(
+        String(2000),
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(8),
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            """status IN ('pending', 'uploaded', 'failed', 'deleted')""",
+            name="tasks_status_check",
+        ),
     )
 
     # Foreign key constraints:
