@@ -35,6 +35,11 @@ class Attachment(Base):
         nullable=False,
     )
 
+    attachment_name: Mapped[str] = mapped_column(
+        String(155),
+        nullable=False,
+    )
+
     original_filename: Mapped[str] = mapped_column(
         String(155),
     )
