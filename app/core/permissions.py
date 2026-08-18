@@ -69,49 +69,37 @@ def can_view_workspace(role: str) -> bool:
 def can_manage_workspace_settings(role: str) -> bool:
     """Determines if an user is allowed to manage workspace settings."""
 
-    if role == "owner":
-        return True
-    return False
+    return is_owner(role)
 
 
 def can_rename_workspace(role: str) -> bool:
     """Determines if an user is allowed to rename a workspace."""
 
-    if role == "owner":
-        return True
-    return False
+    return is_owner(role)
 
 
 def can_delete_workspace(role: str) -> bool:
     """Determines if an user is allowed to delete a workspace."""
 
-    if role == "owner":
-        return True
-    return False
+    return is_owner(role)
 
 
 def can_invite_members(role: str) -> bool:
     """Determines if an user is allowed to invite members to a workspace."""
 
-    if role == "owner":
-        return True
-    return False
+    return is_owner(role)
 
 
 def can_manage_members(role: str) -> bool:
     """Determines if an user is allowed to manage members."""
 
-    if role == "owner":
-        return True
-    return False
+    return is_owner(role)
 
 
 def can_change_roles(role: str) -> bool:
     """Determines if an user is allowed to change roles."""
 
-    if role == "owner":
-        return True
-    return False
+    return is_owner(role)
 
 
 # Task permissions.
@@ -120,21 +108,13 @@ def can_change_roles(role: str) -> bool:
 def can_create_task(role: str) -> bool:
     """Determines if an user is allowed to create a task."""
 
-    roles = ["owner", "admin", "member"]
-
-    if role in roles:
-        return True
-    return False
+    return is_collaborator(role)
 
 
 def can_view_task(role: str) -> bool:
     """Determines if an user is allowed to view a task."""
 
-    roles = ["owner", "admin", "member", "viewer"]
-
-    if role in roles:
-        return True
-    return False
+    return can_view_workspace(role)
 
 
 def can_edit_task(
@@ -142,21 +122,7 @@ def can_edit_task(
 ) -> bool:
     """Determines if an user is allowed to edit a task."""
 
-    if role == "owner" or role == "admin":
-        return True
-
-    if current_user_id == created_by or current_user_id == assignee_id:
-        return True
-
-    return False
-
-
-def can_complete_task(
-    role: str, created_by: str | None, assignee_id: str | None, current_user_id: str
-) -> bool:
-    """Determines if an user is allowed to mark a task as completed."""
-
-    if role == "owner" or role == "admin":
+    if is_owner_or_admin(role):
         return True
 
     if current_user_id == created_by or current_user_id == assignee_id:
@@ -168,9 +134,7 @@ def can_complete_task(
 def can_delete_task(role: str, created_by: str | None, current_user_id: str) -> bool:
     """Determines if an user is allowed to delete a task."""
 
-    roles = ["owner", "admin"]
-
-    if role in roles or current_user_id == created_by:
+    if is_owner_or_admin(role) or current_user_id == created_by:
         return True
     return False
 
@@ -178,31 +142,13 @@ def can_delete_task(role: str, created_by: str | None, current_user_id: str) -> 
 def can_reassign_task(role: str) -> bool:
     """Determines if an user is allowed to reassign a task."""
 
-    if role == "owner" or role == "admin":
-        return True
-    return False
-
-
-def can_change_task_status(
-    role: str, created_by: str | None, assignee_id: str | None, current_user_id: str
-) -> bool:
-    """Determines if an user is allowed to change the status of a task."""
-
-    if role == "owner" or role == "admin":
-        return True
-
-    if current_user_id == created_by or current_user_id == assignee_id:
-        return True
-
-    return False
+    return is_owner_or_admin(role)
 
 
 def can_edit_task_metadata(role: str) -> bool:
     """Determines if an user is allowed to edit structural fields."""
 
-    if role == "owner" or role == "admin":
-        return True
-    return False
+    return is_owner_or_admin(role)
 
 
 # Project permissions.
@@ -211,35 +157,25 @@ def can_edit_task_metadata(role: str) -> bool:
 def can_create_project(role: str) -> bool:
     """Determines if an user is allowed to create a project."""
 
-    if role == "owner" or role == "admin":
-        return True
-    return False
+    return is_owner_or_admin(role)
 
 
 def can_view_project(role: str) -> bool:
     """Determines if an user is allowed to visualize a project."""
 
-    roles = ["owner", "admin", "member", "viewer"]
-
-    if role in roles:
-        return True
-    return False
+    return can_view_workspace(role)
 
 
 def can_edit_project(role: str) -> bool:
     """Determines if an user is allowed to edit a project."""
 
-    if role == "owner" or role == "admin":
-        return True
-    return False
+    return is_owner_or_admin(role)
 
 
 def can_delete_project(role: str) -> bool:
     """Determines if an user is allowed to delete a project."""
 
-    if role == "owner" or role == "admin":
-        return True
-    return False
+    return is_owner_or_admin(role)
 
 
 # Tag permissions.
@@ -248,19 +184,13 @@ def can_delete_project(role: str) -> bool:
 def can_create_tag(role: str) -> bool:
     """Determines if an user is allowed to create a tag."""
 
-    if role == "owner" or role == "admin":
-        return True
-    return False
+    return is_owner_or_admin(role)
 
 
 def can_view_tag(role: str) -> bool:
     """Determines if an user is allowed to visualize a tag."""
 
-    roles = ["owner", "admin", "member", "viewer"]
-
-    if role in roles:
-        return True
-    return False
+    return can_view_workspace(role)
 
 
 def can_assign_tag(
@@ -268,13 +198,7 @@ def can_assign_tag(
 ) -> bool:
     """Determines if an user is allowed to assign a tag."""
 
-    if role == "owner" or role == "admin":
-        return True
-
-    if current_user_id == created_by or current_user_id == assignee_id:
-        return True
-
-    return False
+    return can_edit_task(role, created_by, assignee_id, current_user_id)
 
 
 def can_unassign_tag(
@@ -282,26 +206,55 @@ def can_unassign_tag(
 ) -> bool:
     """Determines if an user is allowed to assign a tag."""
 
-    if role == "owner" or role == "admin":
-        return True
-
-    if current_user_id == created_by or current_user_id == assignee_id:
-        return True
-
-    return False
+    return can_edit_task(role, created_by, assignee_id, current_user_id)
 
 
 def can_edit_tag(role: str) -> bool:
     """Determines if an user is allowed to edit a tag."""
 
-    if role == "owner" or role == "admin":
-        return True
-    return False
+    return is_owner_or_admin(role)
 
 
 def can_delete_tag(role: str) -> bool:
     """Determines if an user is allowed to delete a tag."""
 
-    if role == "owner" or role == "admin":
-        return True
-    return False
+    return is_owner_or_admin(role)
+
+
+# Attachment permissions.
+
+
+def can_add_attachment(
+    role: str, created_by: str | None, assignee_id: str | None, current_user_id: str
+) -> bool:
+    """Determines if an user is allowed to add an attachment to a task."""
+
+    return can_edit_task(role, created_by, assignee_id, current_user_id)
+
+
+def can_view_attachment(role: str) -> bool:
+    """Determines if an user is allowed to visualize an attachment."""
+
+    return can_view_workspace(role)
+
+
+def can_edit_attachment_name(
+    role: str, created_by: str | None, assignee_id: str | None, current_user_id: str
+) -> bool:
+    """Determines if an user is allowed to change an attachment name."""
+
+    return can_edit_task(role, created_by, assignee_id, current_user_id)
+
+
+def can_download_attachment(role: str) -> bool:
+    """Determines if an user is allowed to download an attachment from a task."""
+
+    return can_view_workspace(role)
+
+
+def can_delete_attachment(
+    role: str, created_by: str | None, assignee_id: str | None, current_user_id: str
+) -> bool:
+    """Determines if an user is allowed to delete an attachment from a task."""
+
+    return can_edit_task(role, created_by, assignee_id, current_user_id)
