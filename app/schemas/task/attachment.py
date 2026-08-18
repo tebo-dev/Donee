@@ -16,6 +16,7 @@ class LinkAttachmentCreate(BaseModel):
 
     attachment_name: str = Field(default="Untitled link", max_length=155)
     url: HttpUrl = Field(max_length=2000)
+    task_id: UUID
 
 
 class FileAttachmentCreate(BaseModel):
@@ -27,6 +28,7 @@ class FileAttachmentCreate(BaseModel):
     original_filename: str = Field(min_length=1, max_length=155)
     content_type: str
     syze_bytes: int = Field(gt=0, le=10 * 1024 * 1024)
+    task_id: UUID
 
     @field_validator("content_type")
     @classmethod
