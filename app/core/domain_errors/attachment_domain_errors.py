@@ -7,5 +7,9 @@ class AlreadyUploaded(DomainError):
     """Used when an attachment is already uploaded."""
 
 
+class AttachmentNameTaken(DomainError):
+    """Used when an attachment name is already taken."""
+
+
 class AttachmentNotFound(DomainError):
     """Used when an attachment is not found."""
