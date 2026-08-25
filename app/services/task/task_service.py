@@ -3,7 +3,7 @@
 from datetime import date
 from uuid import UUID
 
-from sqlalchemy import case, select
+from sqlalchemy import case, exists, select
 from sqlalchemy.orm import Session
 
 from app.core.domain_errors.project_domain_errors import ProjectNotFound
@@ -52,14 +52,10 @@ def get_member(
 def validate_project(db: Session, project_id: UUID, workspace_id: UUID) -> bool:
     """Verify that a project exist in a workspace."""
 
-    stmt = select(Project).where(
-        Project.id == project_id, Project.workspace_id == workspace_id
+    stmt = select(
+        exists().where(Project.id == project_id, Project.workspace_id == workspace_id)
     )
-    record = db.execute(stmt).scalars().first()
-
-    if record:
-        return True
-    return False
+    return bool(db.execute(stmt).scalar())
 
 
 def add_tag_to_task(

@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import exists, select
 from sqlalchemy.orm import Session
 
 from app.core.domain_errors.workspace_domain_errors import (
@@ -45,15 +45,13 @@ def get_workspace_by_id(db: Session, workspace_id: UUID) -> Workspace:
 def user_has_access(db: Session, user_id: UUID, workspace_id: UUID) -> bool:
     """Verify if a specific user has access to a workspace."""
 
-    stmt = select(WorkspaceMember).where(
-        WorkspaceMember.workspace_id == workspace_id, WorkspaceMember.user_id == user_id
+    stmt = select(
+        exists().where(
+            WorkspaceMember.workspace_id == workspace_id,
+            WorkspaceMember.user_id == user_id,
+        )
     )
-    record = db.execute(stmt).scalars().first()
-
-    if record:
-        return True
-
-    return False
+    return bool(db.execute(stmt).scalar())
 
 
 def create_workspace(

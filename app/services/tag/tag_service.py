@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import exists, select
 from sqlalchemy.orm import Session
 
 from app.core.domain_errors.tag_domain_errors import (
@@ -23,23 +23,19 @@ from app.utils.colors import random_hex_color
 def validate_tag_name(db: Session, tag_name: str, workspace_id: UUID) -> bool:
     """Confirms if a tag name is already taken."""
 
-    stmt = select(Tag).where(Tag.workspace_id == workspace_id, Tag.name == tag_name)
-    record = db.execute(stmt).scalars().first()
-
-    if record:
-        return True
-    return False
+    stmt = select(
+        exists().where(Tag.workspace_id == workspace_id, Tag.name == tag_name)
+    )
+    return bool(db.execute(stmt).scalar())
 
 
 def validate_tag_color(db: Session, tag_color: str, workspace_id: UUID) -> bool:
     """Confirms if a tag of a specific color already exists."""
 
-    stmt = select(Tag).where(Tag.workspace_id == workspace_id, Tag.color == tag_color)
-    record = db.execute(stmt).scalars().first()
-
-    if record:
-        return True
-    return False
+    stmt = select(
+        exists().where(Tag.workspace_id == workspace_id, Tag.color == tag_color)
+    )
+    return bool(db.execute(stmt).scalar())
 
 
 # Main service
