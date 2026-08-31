@@ -42,30 +42,38 @@ class Attachment(Base):
 
     original_filename: Mapped[str] = mapped_column(
         String(155),
+        nullable=True,
     )
 
     storage_key: Mapped[str] = mapped_column(
         String(114),
+        nullable=True,
     )
 
     content_type: Mapped[str] = mapped_column(
-        String(14),
+        String(15),
+        nullable=True,
     )
 
     size_bytes: Mapped[int] = mapped_column(
         BigInteger,
+        nullable=True,
     )
 
     url: Mapped[str] = mapped_column(
         String(2000),
+        nullable=True,
     )
 
     status: Mapped[str] = mapped_column(
         String(8),
+        nullable=False,
+        default="uploaded",
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
+        DateTime(timezone=True),
+        server_default=func.now(),
     )
 
     __table_args__ = (
