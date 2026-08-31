@@ -6,6 +6,16 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
 
+# Supported file types constant:
+
+SUPPORTED_ATTACHMENT_CONTENT_TYPES = {
+    "application/pdf",
+    "image/png",
+    "image/jpeg",
+    "image/webp",
+    "text/plain",
+}
+
 # Requests
 
 
@@ -16,7 +26,6 @@ class LinkAttachmentCreate(BaseModel):
 
     attachment_name: str = Field(default="Untitled link", max_length=155)
     url: HttpUrl = Field(max_length=2000)
-    task_id: UUID
 
 
 class FileAttachmentCreate(BaseModel):
@@ -27,23 +36,14 @@ class FileAttachmentCreate(BaseModel):
     attachment_name: str | None = Field(default=None, max_length=155)
     original_filename: str = Field(min_length=1, max_length=155)
     content_type: str
-    syze_bytes: int = Field(gt=0, le=10 * 1024 * 1024)
-    task_id: UUID
+    size_bytes: int = Field(gt=0, le=10 * 1024 * 1024)
 
     @field_validator("content_type")
     @classmethod
     def validate_content_type(cls, value: str) -> str:
         """Validates that the uploaded file is within the supported formats."""
 
-        supported_types = {
-            "application/pdf",
-            "image/png",
-            "image/jpeg",
-            "image/webp",
-            "text/plain",
-        }
-
-        if value not in supported_types:
+        if value not in SUPPORTED_ATTACHMENT_CONTENT_TYPES:
             raise ValueError("Unsupported file type.")
 
         return value
@@ -77,7 +77,7 @@ class FileAttachmentOut(BaseModel):
 
 AttachmentOut = Annotated[
     LinkAttachmentOut | FileAttachmentOut,
-    Field(discriminator="type"),
+    Field(discriminator="attachment_type"),
 ]
 
 
