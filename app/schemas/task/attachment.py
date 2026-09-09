@@ -1,7 +1,7 @@
 """Import the necessary libraries for tasks schemas implementation."""
 
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
@@ -49,6 +49,14 @@ class FileAttachmentCreate(BaseModel):
         return value
 
 
+class AttachmentRename(BaseModel):
+    """Schema for renaming an attachment."""
+
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    attachment_new_name: str = Field(default="Untitled link", max_length=155)
+
+
 # Responses
 
 
@@ -56,7 +64,7 @@ class LinkAttachmentOut(BaseModel):
     """Schema for returning link-type attachments."""
 
     id: UUID
-    attachment_type: str
+    attachment_type: Literal["link"]
     attachment_name: str
     url: HttpUrl
     created_at: datetime
@@ -66,7 +74,7 @@ class FileAttachmentOut(BaseModel):
     """Schema for returning file-type attachments."""
 
     id: UUID
-    attachment_type: str
+    attachment_type: Literal["file"]
     attachment_name: str
     original_filename: str
     content_type: str
@@ -90,6 +98,7 @@ class AttachmentListOut(BaseModel):
 class AttachmentUploadUrlOut(BaseModel):
     """Schema for returning a S3 upload url."""
 
+    attachment_id: UUID
     upload_url: str
     expires_in_seconds: int
 
