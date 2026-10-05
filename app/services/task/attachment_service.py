@@ -158,7 +158,7 @@ def _validate_permission(
 
 def add_link(
     db: Session, user_id: UUID, task_id: UUID, link_data: LinkAttachmentCreate
-) -> str:
+) -> None:
     """Add a link attachment to a task."""
 
     task, curr_member = _get_task_and_member(db, user_id, task_id)
@@ -180,8 +180,6 @@ def add_link(
     db.add(new_link)
     db.commit()
     db.refresh(new_link)
-
-    return "attachment added"
 
 
 def add_file(
@@ -330,8 +328,9 @@ def get_download_url(
 ) -> AttachmentDownloadUrlOut:
     """Return a presigned download URL for an attachment."""
 
-    task, curr_member = _get_task_and_member(db, user_id, task_id)
-    _validate_permission(curr_member, task, user_id, can_download_attachment)
+    _, curr_member = _get_task_and_member(db, user_id, task_id)
+    if not can_download_attachment(curr_member.role):
+        raise NotAuthorized()
 
     if not validate_attachment_existence(db, task_id, attachment_id):
         raise AttachmentNotFound()
