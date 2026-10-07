@@ -34,10 +34,10 @@ class Reminder(Base):
 
     channel: Mapped[str] = mapped_column(
         String(5),
-        server_default=sa.text("inapp"),
+        server_default=sa.text("'inapp'"),
     )
 
-    status: Mapped[str] = mapped_column(String(8), server_default=sa.text("pending"))
+    status: Mapped[str] = mapped_column(String(8), server_default=sa.text("'pending'"))
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
