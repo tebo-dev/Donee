@@ -12,6 +12,7 @@ from app.core.jwt_handler import create_access_token
 from app.core.security import hash_password, verify_password
 from app.models.auth.user import User
 from app.schemas.auth.user import Token, UserCreate
+from app.services.auth.email_service import send_email
 from app.services.workspace.workspace_service import create_default_workspace_for_user
 
 # Helpers
@@ -57,6 +58,8 @@ def register_user(db: Session, user_create: UserCreate) -> User:
 
     create_default_workspace_for_user(db, user.id)
 
+    send_email(user.email, "Welcome to Donee", "Your Donee account has been created.")
+
     db.commit()
     db.refresh(user)
 
@@ -88,6 +91,6 @@ def login_user(db: Session, email: str, password: str) -> Token:
     if not user:
         raise InvalidCredentials()
 
-    token = create_access_token({"sub": str(user.id)})
+    token = create_access_token({"sub": str(user.id), "ver": user.token_version})
 
     return Token(access_token=token)

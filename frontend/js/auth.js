@@ -51,9 +51,11 @@ export async function verifyResetCode({ email, code }) {
 }
 
 export async function resetPassword({ email, code, new_password }) {
-  return request("/auth/reset-password", {
+  const data = await request("/auth/reset-password", {
     method: "POST",
     body: { email, code, new_password },
     auth: false,
   });
+  if (data?.access_token) setToken(data.access_token);
+  return data;
 }

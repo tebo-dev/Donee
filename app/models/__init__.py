@@ -1,6 +1,7 @@
 """Import all models in."""
 
 from app.models.auth.password_reset import PasswordResetToken  # noqa: F401
+from app.models.auth.rate_limit import RateLimit  # noqa: F401
 from app.models.auth.user import User  # noqa: F401
 from app.models.project.project import Project  # noqa: F401
 from app.models.tag.tag import Tag  # noqa: F401

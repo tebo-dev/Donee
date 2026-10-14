@@ -31,16 +31,17 @@ def get_current_user(
         payload = decode_access_token(token)
         sub = payload.get("sub")
 
-        if sub is None:
+        if not isinstance(sub, str):
             raise credential_exception
+        user_id = UUID(sub)
 
-    except JWTError as error:
+    except (JWTError, ValueError, TypeError) as error:
         raise credential_exception from error
 
-    stmt = select(User).where(User.id == UUID(sub))
+    stmt = select(User).where(User.id == user_id)
     user = db.execute(stmt).scalars().first()
 
-    if user is None or not user.is_active:
+    if user is None or not user.is_active or payload.get("ver") != user.token_version:
         raise credential_exception
 
     return user

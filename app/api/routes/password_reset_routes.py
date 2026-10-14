@@ -1,15 +1,16 @@
 """Import necessary libraries for endpoints creation."""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
+from app.core.rate_limit import enforce_auth_limit
 from app.db.session import get_db
 from app.schemas.auth.password_reset import (
     ForgotPasswordRequest,
     ResetPasswordRequest,
     VerifyResetCodeRequest,
 )
+from app.schemas.auth.user import Token
 from app.services.auth.password_reset_service import (
     request_password_reset,
     reset_password_service,
@@ -20,28 +21,32 @@ router = APIRouter(tags=["auth"])
 
 
 @router.post("/forgot-password")
-def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db)):
+def forgot_password(
+    payload: ForgotPasswordRequest, request: Request, db: Session = Depends(get_db)
+):
     """Send password reset code."""
 
-    code = request_password_reset(db, payload)
-
-    if settings.ENVIRONMENT == "development":
-        return {"message": "Reset code sent", "debug_code": code}
-
-    return {"message": "Reset code sent"}
+    enforce_auth_limit(db, request, "forgot-password", str(payload.email))
+    request_password_reset(db, payload)
+    return {"message": "If the account exists, a reset code has been sent."}
 
 
 @router.post("/verify-reset-code")
-def verify_reset_code(payload: VerifyResetCodeRequest, db: Session = Depends(get_db)):
+def verify_reset_code(
+    payload: VerifyResetCodeRequest, request: Request, db: Session = Depends(get_db)
+):
     """Verify password reset code."""
 
+    enforce_auth_limit(db, request, "recovery-verify", str(payload.email))
     verify_reset_code_service(db, payload)
     return {"message": "Code is valid."}
 
 
-@router.post("/reset-password")
-def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)):
+@router.post("/reset-password", response_model=Token)
+def reset_password(
+    payload: ResetPasswordRequest, request: Request, db: Session = Depends(get_db)
+):
     """Reset user password."""
 
-    reset_password_service(db, payload)
-    return {"message": "Password updated successfully"}
+    enforce_auth_limit(db, request, "recovery-reset", str(payload.email))
+    return reset_password_service(db, payload)

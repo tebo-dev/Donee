@@ -9,7 +9,7 @@ pwd_context = CryptContext(
 
 
 def hash_password(password: str) -> str:
-    """Hash a plain password using bcrypt."""
+    """Hash a plain password using Argon2."""
 
     return pwd_context.hash(password)
 
@@ -21,7 +21,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def hash_reset_code(code: str) -> str:
-    """Hash a plain code using bcrypt."""
+    """Hash a plain code using Argon2."""
 
     return pwd_context.hash(code)
 
