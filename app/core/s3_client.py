@@ -1,7 +1,6 @@
 """Import the necessary libraries for S3 client set up."""
 
 from functools import lru_cache
-from pathlib import Path
 from urllib.parse import quote
 from uuid import UUID
 
@@ -36,21 +35,17 @@ PREVIEWABLE_CONTENT_TYPES = {
 }
 
 
-def build_attachment_storage_key(
-    user_id: UUID, task_id: UUID, attachment_id: UUID, original_filename: str
-) -> str:
+def build_attachment_storage_key(user_id: UUID, attachment_id: UUID) -> str:
     """Build the S3 object name for a task attachment."""
 
-    extension = Path(original_filename).suffix.lower()
-
-    return f"attachments/users/{user_id}/tasks/{task_id}/{attachment_id}{extension}"
+    return f"attachments/users/{user_id}/{attachment_id}"
 
 
 def build_content_disposition(disposition_type: str, filename: str) -> str:
     """Build a safe Content-Disposition header value"""
 
-    safe_fallback = filename.replace('"', "").replace("\\", "")
-    encoded_filename = quote(filename)
+    safe_fallback = "download"
+    encoded_filename = quote(filename, safe="")
 
     return (
         f"{disposition_type}; "
@@ -62,35 +57,45 @@ def build_content_disposition(disposition_type: str, filename: str) -> str:
 def check_s3_object_exists(storage_key: str) -> bool:
     """Check if an S3 object exists."""
 
+    return get_s3_object_metadata(storage_key) is not None
+
+
+def get_s3_object_metadata(storage_key: str) -> dict | None:
+    """Get a S3 validated object metadata"""
+
     s3 = get_s3_client()
 
     try:
-        s3.head_object(Bucket=settings.AWS_S3_BUCKET_NAME, Key=storage_key)
-        return True
+        return s3.head_object(Bucket=settings.AWS_S3_BUCKET_NAME, Key=storage_key)
     except ClientError as e:
         error_code = e.response["Error"]["Code"]
-        if error_code == "404":
-            return False
+        if error_code in {"404", "NoSuchKey", "NotFound"}:
+            return None
         raise
 
 
 def create_presigned_upload_url(
-    storage_key: str, content_type: str, expires_in: int = UPLOAD_URL_EXPIRES_IN_SECONDS
-) -> str:
-    """Create a pre signed URL to upload a file to S3 bucket."""
+    storage_key: str,
+    content_type: str,
+    size_bytes: int,
+    expires_in: int = UPLOAD_URL_EXPIRES_IN_SECONDS,
+) -> tuple[dict, int]:
+    """Create a signed POST policy enforcing the declared file size at S3."""
 
+    if not 0 < size_bytes <= 10 * 1024 * 1024:
+        raise ValueError("File exceeds upload size limit")
     s3 = get_s3_client()
 
     return (
-        s3.generate_presigned_url(
-            ClientMethod="put_object",
-            Params={
-                "Bucket": settings.AWS_S3_BUCKET_NAME,
-                "Key": storage_key,
-                "ContentType": content_type,
-            },
+        s3.generate_presigned_post(
+            Bucket=settings.AWS_S3_BUCKET_NAME,
+            Key=storage_key,
+            Fields={"Content-Type": content_type},
+            Conditions=[
+                {"Content-Type": content_type},
+                ["content-length-range", size_bytes, size_bytes],
+            ],
             ExpiresIn=expires_in,
-            HttpMethod="PUT",
         ),
         expires_in,
     )

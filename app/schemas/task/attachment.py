@@ -100,6 +100,8 @@ class AttachmentUploadUrlOut(BaseModel):
 
     attachment_id: UUID
     upload_url: str
+    upload_method: Literal["POST"] = "POST"
+    upload_fields: dict[str, str]
     expires_in_seconds: int
 
 

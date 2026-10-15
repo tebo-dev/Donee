@@ -2,7 +2,8 @@
 
 from uuid import UUID, uuid4
 
-from sqlalchemy import delete, exists, select, update
+from fastapi import HTTPException
+from sqlalchemy import delete, exists, func, select, update
 from sqlalchemy.orm import Session
 
 from app.core.domain_errors.attachment_domain_errors import (
@@ -21,15 +22,18 @@ from app.core.permissions import (
     can_edit_attachment_name,
     can_view_attachment,
 )
+from app.core.resource_limits import enforce_quota
 from app.core.s3_client import (
     build_attachment_storage_key,
     check_s3_object_exists,
     create_presigned_access_url,
     create_presigned_upload_url,
     delete_s3_object,
+    get_s3_object_metadata,
 )
 from app.models.task.attachment import Attachment
 from app.models.task.task import Task
+from app.models.workspace.workspace import Workspace
 from app.schemas.task.attachment import (
     AttachmentDownloadUrlOut,
     AttachmentListOut,
@@ -164,6 +168,9 @@ def add_link(
     task, curr_member = _get_task_and_member(db, user_id, task_id)
     _validate_permission(curr_member, task, user_id, can_add_attachment)
 
+    workspace = db.get(Workspace, task.workspace_id)
+    enforce_quota(db, workspace.owner_id, Attachment, Attachment.task_id == task_id, 50)
+
     if validate_attachment_name(db, task_id, link_data.attachment_name):
         raise AttachmentNameTaken()
     if validate_link_url(db, task_id, str(link_data.url)):
@@ -190,6 +197,18 @@ def add_file(
     task, curr_member = _get_task_and_member(db, user_id, task_id)
     _validate_permission(curr_member, task, user_id, can_add_attachment)
 
+    enforce_quota(db, task.created_by, Attachment, Attachment.task_id == task_id, 50)
+    reserved = db.scalar(
+        select(func.coalesce(func.sum(Attachment.size_bytes), 0))
+        .join(Task, Attachment.task_id == Task.id)
+        .where(
+            Task.workspace_id == task.workspace_id,
+            Attachment.status.in_(["pending", "uploaded"]),
+        )
+    )
+    if reserved + file_data.size_bytes > 100 * 1024 * 1024:
+        raise HTTPException(409, "Workspace attachment storage limit reached.")
+
     attachment_name = file_data.attachment_name or file_data.original_filename
     if validate_attachment_name(db, task_id, attachment_name):
         raise AttachmentNameTaken()
@@ -197,9 +216,8 @@ def add_file(
         raise AlreadyUploaded()
 
     attachment_id = uuid4()
-    storage_key = build_attachment_storage_key(
-        user_id, task_id, attachment_id, file_data.original_filename
-    )
+    storage_key = build_attachment_storage_key(user_id, attachment_id)
+
     new_file = Attachment(
         id=attachment_id,
         task_id=task_id,
@@ -213,14 +231,14 @@ def add_file(
         status="pending",
     )
     db.add(new_file)
-    db.commit()
-
-    upload_url, expires_in = create_presigned_upload_url(
-        storage_key, file_data.content_type
+    upload, expires_in = create_presigned_upload_url(
+        storage_key, file_data.content_type, file_data.size_bytes
     )
+    db.commit()
     return AttachmentUploadUrlOut(
         attachment_id=attachment_id,
-        upload_url=upload_url,
+        upload_url=upload["url"],
+        upload_fields=upload["fields"],
         expires_in_seconds=expires_in,
     )
 
@@ -236,10 +254,23 @@ def file_attachment_upload_complete(
     storage_key = get_storage_key(db, task_id, attachment_id)
     if not storage_key:
         raise AttachmentNotFound()
-    if not check_s3_object_exists(storage_key):
-        raise AttachmentNotInBucket()
     if get_attachment_status(db, task_id, attachment_id) != "pending":
         raise InvalidAttachmentStatus()
+    metadata = get_s3_object_metadata(storage_key)
+    if metadata is None:
+        raise AttachmentNotInBucket()
+    attachment = db.get(Attachment, attachment_id)
+    if (
+        metadata.get("ContentLength") != attachment.size_bytes
+        or not 0 < metadata.get("ContentLength", 0) <= 10 * 1024 * 1024
+        or metadata.get("ContentType") != attachment.content_type
+    ):
+        delete_s3_object(storage_key)
+        attachment.status = "failed"
+        db.commit()
+        raise HTTPException(
+            400, "Uploaded file does not match the approved size or type."
+        )
 
     db.execute(
         update(Attachment)
@@ -346,6 +377,8 @@ def get_download_url(
     )
     if not attachment or not attachment.storage_key:
         raise AttachmentNotFound()
+    if attachment.status != "uploaded":
+        raise InvalidAttachmentStatus()
 
     download_url, expires_in = create_presigned_access_url(
         attachment.storage_key,
@@ -371,12 +404,11 @@ def delete_attachment(
         raise AttachmentNotFound()
 
     storage_key = get_storage_key(db, task_id, attachment_id)
+    if storage_key:
+        delete_s3_object(storage_key)
     db.execute(
         delete(Attachment).where(
             Attachment.id == attachment_id, Attachment.task_id == task_id
         )
     )
     db.commit()
-
-    if storage_key:
-        delete_s3_object(storage_key)
