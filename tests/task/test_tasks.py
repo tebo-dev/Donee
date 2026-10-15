@@ -20,7 +20,6 @@ def test_create_task(client):
         "description": "Test description",
         "priority": 3,
         "due_at": "2026-05-01",
-        "project_id": None,
         "workspace_id": ws["id"],
     }
 
@@ -55,7 +54,6 @@ def test_cannot_create_task_in_foreign_workspace(client):
         "description": "Should fail",
         "priority": 1,
         "due_at": "2026-05-01",
-        "project_id": None,
         "workspace_id": ws_a["id"],
     }
 
@@ -84,7 +82,6 @@ def test_list_tasks_only_from_workspace(client):
                 "description": "desc",
                 "priority": 2,
                 "due_at": "2026-05-01",
-                "project_id": None,
                 "workspace_id": ws_a["id"],
             },
             headers=headers_a,
@@ -106,7 +103,6 @@ def test_list_tasks_only_from_workspace(client):
             "description": "desc",
             "priority": 1,
             "due_at": "2026-05-01",
-            "project_id": None,
             "workspace_id": ws_b["id"],
         },
         headers=headers_b,
@@ -138,7 +134,6 @@ def test_update_task(client):
             "description": "desc",
             "priority": 3,
             "due_at": "2026-05-01",
-            "project_id": None,
             "workspace_id": ws["id"],
         },
         headers=headers,
@@ -152,8 +147,6 @@ def test_update_task(client):
         "status": "in_progress",
         "priority": 1,
         "due_at": "2026-06-01",
-        "project_id": None,
-        "workspace_id": ws["id"],
     }
 
     res2 = client.patch(f"/tasks/{task['id']}", json=update, headers=headers)
@@ -182,7 +175,6 @@ def test_delete_task(client):
             "description": "desc",
             "priority": 3,
             "due_at": "2026-05-01",
-            "project_id": None,
             "workspace_id": ws["id"],
         },
         headers=headers,
@@ -218,7 +210,6 @@ def test_order_tasks_by_status(client):
                 "description": "desc",
                 "priority": 3,
                 "due_at": "2026-05-01",
-                "project_id": None,
                 "workspace_id": ws["id"],
             },
             headers=headers,
@@ -237,8 +228,6 @@ def test_order_tasks_by_status(client):
                 "status": status,
                 "priority": 3,
                 "due_at": "2026-05-01",
-                "project_id": None,
-                "workspace_id": ws["id"],
             },
             headers=headers,
         )

@@ -77,8 +77,8 @@ def test_me_fails_without_token(client):
 # Reset password tests
 
 
-def test_forgot_password_returns_debug_code_in_dev(client):
-    """Test that the debug code is returned in dev."""
+def test_forgot_password_never_returns_code(client, mailbox):
+    """Recovery code is delivered only through mail."""
 
     register_user(client)
 
@@ -87,9 +87,9 @@ def test_forgot_password_returns_debug_code_in_dev(client):
 
     data = res.json()
 
-    assert "debug_code" in data
-    assert isinstance(data["debug_code"], str)
-    assert len(data["debug_code"]) == 6
+    assert "debug_code" not in data
+    assert "123456" not in res.text
+    assert "123456" in mailbox[-1]["body"]
 
 
 def test_verify_reset_code_succeeds_with_correct_code(client):
@@ -99,7 +99,7 @@ def test_verify_reset_code_succeeds_with_correct_code(client):
 
     forgot = client.post("/auth/forgot-password", json={"email": "test@donee.com"})
     assert forgot.status_code == 200
-    code = forgot.json()["debug_code"]
+    code = "123456"
 
     verify = client.post(
         "/auth/verify-reset-code", json={"email": "test@donee.com", "code": code}
@@ -118,7 +118,7 @@ def test_reset_password_allows_login_with_new_password(client):
     # Request code
     forgot = client.post("/auth/forgot-password", json={"email": "test@donee.com"})
     assert forgot.status_code == 200
-    code = forgot.json()["debug_code"]
+    code = "123456"
 
     # Reset password
     reset = client.post(

@@ -136,7 +136,6 @@ def test_edit_tag(client):
     update = {
         "name": "New Tag",
         "color": "#334455",
-        "workspace_id": ws["id"],
     }
 
     res = client.patch(f"/tags/{tag['id']}", json=update, headers=headers)

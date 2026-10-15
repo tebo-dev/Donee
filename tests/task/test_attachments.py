@@ -51,7 +51,6 @@ def _create_user_and_task(client, db_session, *, email=None, username=None):
             "priority": 3,
             "due_at": "2026-05-01",
             "tags": {"add_tag_ids": [], "remove_tag_ids": []},
-            "project_id": None,
             "workspace_id": workspace["id"],
         },
         headers=headers,
@@ -123,7 +122,7 @@ def test_add_file_attachment_and_mark_it_uploaded(client, db_session):
 
     with patch(
         "app.services.task.attachment_service.create_presigned_upload_url",
-        return_value=("https://s3-upload.example/upload", 300),
+        return_value=({"url": "https://s3-upload.example/upload", "fields": {}}, 300),
     ):
         upload = add_file(
             db_session,
@@ -140,8 +139,8 @@ def test_add_file_attachment_and_mark_it_uploaded(client, db_session):
     assert upload.upload_url == "https://s3-upload.example/upload"
 
     with patch(
-        "app.services.task.attachment_service.check_s3_object_exists",
-        return_value=True,
+        "app.services.task.attachment_service.get_s3_object_metadata",
+        return_value={"ContentLength": 1024, "ContentType": "application/pdf"},
     ):
         file_attachment_upload_complete(
             db_session, user_id, task_id, upload.attachment_id
@@ -159,7 +158,7 @@ def test_file_upload_failed_and_rename_download_delete_flow(client, db_session):
 
     with patch(
         "app.services.task.attachment_service.create_presigned_upload_url",
-        return_value=("https://s3-upload.example/upload", 300),
+        return_value=({"url": "https://s3-upload.example/upload", "fields": {}}, 300),
     ):
         upload = add_file(
             db_session,
@@ -193,9 +192,8 @@ def test_file_upload_failed_and_rename_download_delete_flow(client, db_session):
         "app.services.task.attachment_service.create_presigned_access_url",
         return_value=("https://s3-download.example/download", 300),
     ):
-        download = get_download_url(db_session, user_id, task_id, upload.attachment_id)
-
-    assert download.download_url == "https://s3-download.example/download"
+        with pytest.raises(InvalidAttachmentStatus):
+            get_download_url(db_session, user_id, task_id, upload.attachment_id)
 
     attachments = get_task_attachments(db_session, user_id, task_id).attachments
     assert attachments[0].attachment_name == "Updated letter"
@@ -216,7 +214,7 @@ def test_missing_attachment_and_invalid_status_are_handled(client, db_session):
 
     with patch(
         "app.services.task.attachment_service.create_presigned_upload_url",
-        return_value=("https://s3-upload.example/upload", 300),
+        return_value=({"url": "https://s3-upload.example/upload", "fields": {}}, 300),
     ):
         upload = add_file(
             db_session,
@@ -231,16 +229,16 @@ def test_missing_attachment_and_invalid_status_are_handled(client, db_session):
         )
 
     with patch(
-        "app.services.task.attachment_service.check_s3_object_exists",
-        return_value=True,
+        "app.services.task.attachment_service.get_s3_object_metadata",
+        return_value={"ContentLength": 1024, "ContentType": "application/pdf"},
     ):
         file_attachment_upload_complete(
             db_session, user_id, task_id, upload.attachment_id
         )
 
     with patch(
-        "app.services.task.attachment_service.check_s3_object_exists",
-        return_value=True,
+        "app.services.task.attachment_service.get_s3_object_metadata",
+        return_value={"ContentLength": 1024, "ContentType": "application/pdf"},
     ):
         with pytest.raises(InvalidAttachmentStatus):
             file_attachment_upload_complete(
