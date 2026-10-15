@@ -10,6 +10,7 @@ from app.core.domain_errors.workspace_domain_errors import (
     NotAuthorized,
     WorkspaceNotFound,
 )
+from app.core.resource_limits import enforce_quota
 from app.models.workspace.workspace import Workspace
 from app.models.workspace.workspace_member import WorkspaceMember
 from app.schemas.workspace.workspace import (
@@ -62,6 +63,8 @@ def create_workspace(
     if get_workspace_by_name(db, user_id, workspace_data.name):
         raise ExistingWorkspaceName()
 
+    enforce_quota(db, user_id, Workspace, Workspace.owner_id == user_id, 50)
+
     new_workspace = Workspace(
         owner_id=user_id,
         name=workspace_data.name,
@@ -86,11 +89,10 @@ def create_workspace(
 def create_default_workspace_for_user(db: Session, user_id: UUID) -> None:
     """Create a default workspace when a new user registers."""
 
-    default_workspace = WorkspaceCreation(
-        name="My Space",
-    )
-
-    create_workspace(db, user_id, default_workspace)
+    workspace = Workspace(owner_id=user_id, name="My Space")
+    db.add(workspace)
+    db.flush()
+    db.add(WorkspaceMember(workspace_id=workspace.id, user_id=user_id, role="owner"))
 
 
 def get_user_workspaces(db: Session, user_id: UUID) -> WorkspaceListOut:
@@ -102,7 +104,7 @@ def get_user_workspaces(db: Session, user_id: UUID) -> WorkspaceListOut:
     workspaces_ids = db.execute(stmt).scalars().all()
 
     if not workspaces_ids:
-        return []
+        return WorkspaceListOut(workspaces=[])
 
     user_workspaces = (
         db.execute(select(Workspace).where(Workspace.id.in_(workspaces_ids)))
@@ -134,6 +136,9 @@ def rename_workspace(
 
     workspace = get_workspace_by_id(db, workspace_id)
     duplicate = get_workspace_by_name(db, user_id, update.name)
+
+    if not workspace:
+        raise WorkspaceNotFound()
 
     if workspace.owner_id != user_id:
         raise NotAuthorized()

@@ -12,7 +12,9 @@ from app.core.domain_errors.tag_domain_errors import (
 )
 from app.core.domain_errors.workspace_domain_errors import NotAuthorized
 from app.core.permissions import can_create_tag, can_delete_tag, can_edit_tag
+from app.core.resource_limits import enforce_quota
 from app.models.tag.tag import Tag
+from app.models.workspace.workspace import Workspace
 from app.schemas.tag.tag import TagCreate, TagEdit, TagListOut
 from app.services.task.task_service import get_member
 from app.utils.colors import random_hex_color
@@ -48,6 +50,9 @@ def create_tag(db: Session, user_id: UUID, tag_data: TagCreate) -> Tag:
 
     if not curr_member or not can_create_tag(curr_member.role):
         raise NotAuthorized()
+
+    workspace = db.get(Workspace, tag_data.workspace_id)
+    enforce_quota(db, workspace.owner_id, Tag, Tag.workspace_id == workspace.id, 100)
 
     if validate_tag_name(db, tag_data.name, tag_data.workspace_id):
         raise ExistingName()
@@ -116,23 +121,27 @@ def edit_tag(db: Session, user_id: UUID, tag_id: UUID, tag_edit: TagEdit) -> Tag
 
     updated_data = tag_edit.model_dump(exclude_unset=True)
 
-    if "name" in updated_data and validate_tag_name(
-        db, updated_data.get("name"), tag.workspace_id
-    ):
-        raise ExistingName()
-
-    if "color" in updated_data and validate_tag_color(
-        db, updated_data.get("color"), tag.workspace_id
-    ):
-        raise ExistingColor()
-
     curr_member = get_member(db, user_id, tag.workspace_id)
-
     if not curr_member or not can_edit_tag(curr_member.role):
         raise NotAuthorized()
 
+    if (
+        "name" in updated_data
+        and updated_data["name"] != tag.name
+        and validate_tag_name(db, updated_data.get("name"), tag.workspace_id)
+    ):
+        raise ExistingName()
+
+    if (
+        "color" in updated_data
+        and updated_data["color"] != tag.color
+        and validate_tag_color(db, updated_data.get("color"), tag.workspace_id)
+    ):
+        raise ExistingColor()
+
     for field, value in updated_data.items():
-        setattr(tag, field, value)
+        if field in {"name", "color"}:
+            setattr(tag, field, value)
 
     db.commit()
 

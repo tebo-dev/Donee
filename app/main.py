@@ -1,6 +1,6 @@
 """Import libraries for router implementation."""
 
-from fastapi import FastAPI, status
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -10,6 +10,8 @@ from app.api.routes.password_reset_routes import router as password_reset_router
 from app.api.routes.tag_routes import router as tag_router
 from app.api.routes.task_routes import router as task_router
 from app.api.routes.workspace_routes import router as workspace_router
+from app.core.body_limit import BodyLimitMiddleware
+from app.core.config import settings
 from app.core.domain_errors.attachment_domain_errors import (
     AlreadyUploaded,
     AttachmentInBucket,
@@ -48,12 +50,14 @@ app = FastAPI(
     version="0.1.0",
 )
 
+app.add_middleware(BodyLimitMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=settings.CORS_ALLOWED_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 app.include_router(auth_routher, prefix="/auth", tags=["auth"])
@@ -65,7 +69,7 @@ app.include_router(tag_router, tags=["tag"])
 
 
 @app.exception_handler(DomainError)
-async def domain_error_handler(exc: DomainError):
+async def domain_error_handler(request: Request, exc: DomainError):
     """Domain errors handler."""
 
     status_code = status.HTTP_400_BAD_REQUEST

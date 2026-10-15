@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
@@ -37,14 +37,16 @@ def add_new_task(
 def return_tasks(
     workspace_id: UUID,
     order_by: str = None,
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     """Return all the tasks from a workspace."""
 
     if order_by:
-        return order_tasks(db, user.id, workspace_id, order_by)
-    return get_workspace_tasks(db, user.id, workspace_id)
+        return order_tasks(db, user.id, workspace_id, order_by, limit, offset)
+    return get_workspace_tasks(db, user.id, workspace_id, limit, offset)
 
 
 @router.get("/tasks/{task_id}", response_model=TaskOut)

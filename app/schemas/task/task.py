@@ -1,9 +1,10 @@
 """Import the necessary libraries for tasks schemas implementation."""
 
 from datetime import date, datetime
+from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.schemas.tag.tag import TagListOut, TagPatch
 
@@ -16,11 +17,10 @@ class TaskCreate(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
     title: str = Field(min_length=2, max_length=80)
-    description: str
+    description: str = Field(max_length=10000)
     priority: int
     due_at: date
-    tags: TagPatch | None
-    project_id: UUID | None
+    tags: TagPatch | None = None
     workspace_id: UUID
 
 
@@ -30,13 +30,20 @@ class TaskUpdate(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
     title: str | None = Field(default=None, min_length=2, max_length=80)
-    description: str
-    status: str | None
-    priority: int | None
-    due_at: date | None
-    tags: TagPatch | None
-    project_id: UUID | None
-    workspace_id: UUID
+    description: str | None = Field(default=None, max_length=10000)
+    status: Literal["to do", "in_progress", "blocked", "done", "archived"] | None = None
+    priority: int | None = None
+    due_at: date | None = None
+    tags: TagPatch | None = None
+
+    @model_validator(mode="after")
+    def reject_null_fields(self):
+        """Reject any null fields."""
+
+        for name in self.model_fields_set - {"tags"}:
+            if getattr(self, name) is None:
+                raise ValueError(f"{name} cannot be null")
+        return self
 
 
 # Responses
@@ -49,10 +56,11 @@ class TaskPreview(BaseModel):
 
     id: UUID
     title: str
+    workspace_id: UUID
     status: str
     priority: int
     due_at: date
-    tags: TagListOut | None = Field(default_factory=list)
+    tags: TagListOut = Field(default_factory=lambda: TagListOut(tags=[], total=0))
 
 
 class TaskOut(BaseModel):
@@ -66,10 +74,9 @@ class TaskOut(BaseModel):
     status: str
     priority: int
     due_at: date
-    tags: TagListOut | None = Field(default_factory=list)
+    tags: TagListOut = Field(default_factory=lambda: TagListOut(tags=[], total=0))
     completed_at: date | None
     workspace_id: UUID
-    project_id: UUID | None
     created_at: datetime
     updated_at: datetime
 

@@ -3,10 +3,9 @@
 from datetime import date
 from uuid import UUID
 
-from sqlalchemy import case, exists, select
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
-from app.core.domain_errors.project_domain_errors import ProjectNotFound
 from app.core.domain_errors.tag_domain_errors import TagNotFound
 from app.core.domain_errors.task_domain_errors import (
     InvalidOrderParameter,
@@ -17,14 +16,16 @@ from app.core.permissions import (
     can_assign_tag,
     can_create_task,
     can_delete_task,
-    can_edit_project,
     can_edit_task,
     can_unassign_tag,
 )
-from app.models.project.project import Project
+from app.core.resource_limits import enforce_quota
+from app.core.s3_client import delete_s3_object
 from app.models.tag.tag import Tag
+from app.models.task.attachment import Attachment
 from app.models.task.task import Task
 from app.models.task.task_tag import TaskTag
+from app.models.workspace.workspace import Workspace
 from app.models.workspace.workspace_member import WorkspaceMember
 from app.schemas.tag.tag import TagListOut
 from app.schemas.task.task import (
@@ -49,15 +50,6 @@ def get_member(
     return db.execute(stmt).scalars().first()
 
 
-def validate_project(db: Session, project_id: UUID, workspace_id: UUID) -> bool:
-    """Verify that a project exist in a workspace."""
-
-    stmt = select(
-        exists().where(Project.id == project_id, Project.workspace_id == workspace_id)
-    )
-    return bool(db.execute(stmt).scalar())
-
-
 def add_tag_to_task(
     db: Session, curr_member: WorkspaceMember, task: Task, tag_id: UUID
 ) -> None:
@@ -68,13 +60,22 @@ def add_tag_to_task(
     ):
         raise NotAuthorized()
 
+    if curr_member.workspace_id != task.workspace_id or not db.scalar(
+        select(Tag.id).where(Tag.id == tag_id, Tag.workspace_id == task.workspace_id)
+    ):
+        raise TagNotFound()
+    if db.scalar(
+        select(TaskTag).where(TaskTag.task_id == task.id, TaskTag.tag_id == tag_id)
+    ):
+        return
+
     new_tag = TaskTag(
         task_id=task.id,
         tag_id=tag_id,
     )
 
     db.add(new_tag)
-    db.commit()
+    db.flush()
 
 
 def remove_tag_from_task(
@@ -82,9 +83,7 @@ def remove_tag_from_task(
 ) -> None:
     """Add a tag to task tags table."""
 
-    stmt = select(TaskTag).where(
-        TaskTag.task_id == task.id and TaskTag.tag_id == tag_id
-    )
+    stmt = select(TaskTag).where(TaskTag.task_id == task.id, TaskTag.tag_id == tag_id)
     tag = db.execute(stmt).scalars().first()
 
     if not tag:
@@ -96,7 +95,7 @@ def remove_tag_from_task(
         raise NotAuthorized()
 
     db.delete(tag)
-    db.commit()
+    db.flush()
 
 
 def get_task_tags(db: Session, task_id: UUID, user_id: UUID) -> TagListOut:
@@ -117,9 +116,17 @@ def get_task_tags(db: Session, task_id: UUID, user_id: UUID) -> TagListOut:
     tags_ids = db.execute(stmt).scalars().all()
 
     if not tags_ids:
-        return []
+        return TagListOut(tags=[], total=0)
 
-    task_tags = db.execute(select(Tag).where(Tag.id.in_(tags_ids))).scalars().all()
+    task_tags = (
+        db.execute(
+            select(Tag).where(
+                Tag.id.in_(tags_ids), Tag.workspace_id == task.workspace_id
+            )
+        )
+        .scalars()
+        .all()
+    )
 
     return TagListOut(tags=task_tags, total=len(task_tags))
 
@@ -127,7 +134,7 @@ def get_task_tags(db: Session, task_id: UUID, user_id: UUID) -> TagListOut:
 # Main service
 
 
-def create_task(db: Session, user_id: UUID, task_data: TaskCreate) -> Task:
+def create_task(db: Session, user_id: UUID, task_data: TaskCreate) -> TaskOut:
     """Create a new task."""
 
     curr_member = get_member(db, user_id, task_data.workspace_id)
@@ -135,12 +142,8 @@ def create_task(db: Session, user_id: UUID, task_data: TaskCreate) -> Task:
     if not curr_member or not can_create_task(curr_member.role):
         raise NotAuthorized()
 
-    if task_data.project_id:
-        if not validate_project(db, task_data.project_id, task_data.workspace_id):
-            raise ProjectNotFound()
-
-        if not can_edit_project(curr_member.role):
-            raise NotAuthorized()
+    workspace = db.get(Workspace, task_data.workspace_id)
+    enforce_quota(db, workspace.owner_id, Task, Task.workspace_id == workspace.id, 1000)
 
     new_task = Task(
         title=task_data.title,
@@ -148,13 +151,11 @@ def create_task(db: Session, user_id: UUID, task_data: TaskCreate) -> Task:
         priority=task_data.priority,
         created_by=user_id,
         due_at=task_data.due_at,
-        project_id=task_data.project_id,
         workspace_id=task_data.workspace_id,
     )
 
     db.add(new_task)
-    db.commit()
-    db.refresh(new_task)
+    db.flush()
 
     if task_data.tags:
         patch = task_data.tags
@@ -165,13 +166,18 @@ def create_task(db: Session, user_id: UUID, task_data: TaskCreate) -> Task:
         for tag_id in patch.remove_tag_ids:
             remove_tag_from_task(db, curr_member, new_task, tag_id)
 
+    db.commit()
+    db.refresh(new_task)
+
     new_task_schema = TaskOut.model_validate(new_task)
     new_task_schema.tags = get_task_tags(db, new_task.id, user_id)
 
     return new_task_schema
 
 
-def get_workspace_tasks(db: Session, user_id: UUID, workspace_id: UUID) -> TaskListOut:
+def get_workspace_tasks(
+    db: Session, user_id: UUID, workspace_id: UUID, limit: int = 50, offset: int = 0
+) -> TaskListOut:
     """Return all the tasks from a workspace."""
 
     curr_member = get_member(db, user_id, workspace_id)
@@ -179,7 +185,13 @@ def get_workspace_tasks(db: Session, user_id: UUID, workspace_id: UUID) -> TaskL
     if not curr_member:
         raise NotAuthorized()
 
-    stmt = select(Task).where(Task.workspace_id == workspace_id)
+    stmt = (
+        select(Task)
+        .where(Task.workspace_id == workspace_id)
+        .order_by(Task.id)
+        .limit(limit)
+        .offset(offset)
+    )
     workspace_tasks = db.execute(stmt).scalars().all()
     task_schemas = []
 
@@ -190,11 +202,15 @@ def get_workspace_tasks(db: Session, user_id: UUID, workspace_id: UUID) -> TaskL
 
     return TaskListOut(
         tasks=task_schemas,
-        total=len(workspace_tasks),
+        total=db.scalar(
+            select(func.count())
+            .select_from(Task)
+            .where(Task.workspace_id == workspace_id)
+        ),
     )
 
 
-def get_task_for_user(db: Session, task_id: UUID, user_id: UUID) -> Task:
+def get_task_for_user(db: Session, task_id: UUID, user_id: UUID) -> TaskOut:
     """Return a specific task."""
 
     stmt = select(Task).where(Task.id == task_id)
@@ -211,12 +227,12 @@ def get_task_for_user(db: Session, task_id: UUID, user_id: UUID) -> Task:
     task_schema = TaskOut.model_validate(task)
     task_schema.tags = get_task_tags(db, task.id, user_id)
 
-    return task
+    return task_schema
 
 
 def update_task(
     db: Session, task_id: UUID, user_id: UUID, task_update: TaskUpdate
-) -> Task:
+) -> TaskOut:
     """Update an existing task and return it."""
 
     stmt = select(Task).where(Task.id == task_id)
@@ -244,7 +260,7 @@ def update_task(
     updated_data = task_update.model_dump(exclude_unset=True)
 
     for field, value in updated_data.items():
-        if field != "tags":
+        if field in {"title", "description", "status", "priority", "due_at"}:
             setattr(task, field, value)
 
     if updated_data.get("status") == "done":
@@ -254,7 +270,7 @@ def update_task(
 
     db.commit()
 
-    return task
+    return get_task_for_user(db, task.id, user_id)
 
 
 def delete_task(db: Session, task_id: UUID, user_id: UUID) -> None:
@@ -273,12 +289,25 @@ def delete_task(db: Session, task_id: UUID, user_id: UUID) -> None:
     ):
         raise NotAuthorized()
 
+    # Do not release storage accounting while leaving uploaded objects behind.
+    keys = db.scalars(
+        select(Attachment.storage_key).where(
+            Attachment.task_id == task.id, Attachment.storage_key.is_not(None)
+        )
+    ).all()
+    for key in keys:
+        delete_s3_object(key)
     db.delete(task)
     db.commit()
 
 
 def order_tasks(
-    db: Session, user_id: UUID, workspace_id: UUID, order_by: str
+    db: Session,
+    user_id: UUID,
+    workspace_id: UUID,
+    order_by: str,
+    limit: int = 50,
+    offset: int = 0,
 ) -> TaskListOut:
     """Order task by different parameters."""
 
@@ -302,14 +331,22 @@ def order_tasks(
     elif order_by == "priority":
         stmt = stmt.order_by(Task.priority.asc())
 
-    elif order_by == "project":
-        stmt = stmt.order_by(Task.project_id)
-
     else:
         raise InvalidOrderParameter()
 
-    tasks = db.execute(stmt).scalars().all()
+    tasks = (
+        db.execute(stmt.order_by(Task.id).limit(limit).offset(offset)).scalars().all()
+    )
+    previews = []
+    for task in tasks:
+        preview = TaskPreview.model_validate(task)
+        preview.tags = get_task_tags(db, task.id, user_id)
+        previews.append(preview)
     return TaskListOut(
-        tasks=tasks,
-        total=len(tasks),
+        tasks=previews,
+        total=db.scalar(
+            select(func.count())
+            .select_from(Task)
+            .where(Task.workspace_id == workspace_id)
+        ),
     )

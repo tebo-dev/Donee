@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 # Requests
 
@@ -25,7 +25,15 @@ class TagEdit(BaseModel):
 
     name: str | None = Field(default=None, min_length=2, max_length=80)
     color: str | None = Field(default=None, min_length=4, max_length=7)
-    workspace_id: UUID
+
+    @model_validator(mode="after")
+    def reject_null_fields(self):
+        """Reject any null fields."""
+
+        for name in self.model_fields_set:
+            if getattr(self, name) is None:
+                raise ValueError(f"{name} cannot be null")
+        return self
 
 
 class TagPatch(BaseModel):
@@ -33,8 +41,8 @@ class TagPatch(BaseModel):
 
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
-    add_tag_ids: list[UUID] = Field(default_factory=list)
-    remove_tag_ids: list[UUID] = Field(default_factory=list)
+    add_tag_ids: list[UUID] = Field(default_factory=list, max_length=50)
+    remove_tag_ids: list[UUID] = Field(default_factory=list, max_length=50)
 
 
 # Responses

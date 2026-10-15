@@ -122,6 +122,9 @@ def can_edit_task(
 ) -> bool:
     """Determines if an user is allowed to edit a task."""
 
+    if not is_collaborator(role):
+        return False
+
     if is_owner_or_admin(role):
         return True
 
@@ -133,6 +136,9 @@ def can_edit_task(
 
 def can_delete_task(role: str, created_by: str | None, current_user_id: str) -> bool:
     """Determines if an user is allowed to delete a task."""
+
+    if not is_collaborator(role):
+        return False
 
     if is_owner_or_admin(role) or current_user_id == created_by:
         return True

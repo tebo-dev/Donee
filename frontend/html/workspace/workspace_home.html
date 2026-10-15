@@ -56,7 +56,6 @@
                 <button class="workspace-tree-item active" type="button" data-order="">All tasks</button>
                 <button class="workspace-tree-item" type="button" data-order="status">By status</button>
                 <button class="workspace-tree-item" type="button" data-order="priority">By priority</button>
-                <button class="workspace-tree-item" type="button" data-order="project">By project</button>
               </div>
 
               <div class="workspace-tree-group">
@@ -84,7 +83,7 @@
         <div class="task-modal-head">
           <div>
             <h2 class="workspace-form-title">New task</h2>
-            <p class="workspace-form-copy">Tasks belong to the current workspace. A project is optional.</p>
+            <p class="workspace-form-copy">Tasks belong to the current workspace.</p>
           </div>
           <button id="taskModalCloseBtn" class="workspace-icon-btn task-close-btn" type="button">✕</button>
         </div>
@@ -130,16 +129,6 @@
             </div>
           </div>
 
-          <div class="workspace-form-row">
-            <label class="label" for="taskProjectId">Project ID (optional)</label>
-            <input
-              class="input"
-              id="taskProjectId"
-              name="taskProjectId"
-              type="text"
-              placeholder="Paste a project UUID or leave empty"
-            />
-          </div>
 
           <p id="taskError" class="workspace-inline-error"></p>
 

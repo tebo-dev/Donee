@@ -83,9 +83,17 @@ async function getWorkspaceById(workspaceId) {
 }
 
 async function getWorkspaceTasks(workspaceId, orderBy = "") {
-  const params = new URLSearchParams({ workspace_id: workspaceId });
-  if (orderBy) params.set("order_by", orderBy);
-  return request(`/tasks?${params.toString()}`, { method: "GET" });
+  const tasks = [];
+  let total = 0;
+  do {
+    const params = new URLSearchParams({ workspace_id: workspaceId, limit: "100", offset: String(tasks.length) });
+    if (orderBy) params.set("order_by", orderBy);
+    const page = await request(`/tasks?${params.toString()}`, { method: "GET" });
+    total = page.total;
+    if (!page.tasks.length) break;
+    tasks.push(...page.tasks);
+  } while (tasks.length < total);
+  return { tasks, total };
 }
 
 async function createTask(payload) {
@@ -442,8 +450,6 @@ async function saveTaskDetail() {
       status,
       priority,
       due_at,
-      project_id: currentDetailTask?.project_id || null,
-      workspace_id: currentWorkspace.id,
     });
     renderFeedback("Task updated successfully.", "success");
     closeTaskDetail();
@@ -485,13 +491,11 @@ function openCreateTaskModal() {
   const descEl = $("#taskDescription");
   const priorityEl = $("#taskPriority");
   const dueEl = $("#taskDueAt");
-  const projectEl = $("#taskProjectId");
 
   if (titleEl) titleEl.value = "";
   if (descEl) descEl.value = "";
   if (priorityEl) priorityEl.value = "3";
   if (dueEl) dueEl.value = "";
-  if (projectEl) projectEl.value = "";
 
   overlay.classList.remove("hidden");
   titleEl?.focus();
@@ -515,7 +519,6 @@ async function handleTaskSubmit(event) {
     description: $("#taskDescription")?.value.trim() || "",
     priority: Number($("#taskPriority")?.value),
     due_at: $("#taskDueAt")?.value || "",
-    project_id: $("#taskProjectId")?.value.trim() || null,
     workspace_id: currentWorkspace.id,
   };
 
