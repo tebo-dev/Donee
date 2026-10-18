@@ -17,7 +17,7 @@ Donee aims to provide a structured environment where users can:
 - Stay productive without visual overload
 - Experience a minimal, distraction-free interface
 
-The design philosophy follows a **Zen Tech aesthetic**: dark-first, subtle accents, and intentional spacing.
+The frontend follows the **Phosphor aesthetic**: terminal-inspired surfaces, a pixel ghost, and Matrix, Terminal, Dracula, and Akira palettes.
 
 ---
 
@@ -52,7 +52,7 @@ Development is done using a **vertical slice approach**:
 ### Frontend
 - HTML
 - CSS
-- JavaScript (Vanilla)
+- React with TypeScript and Vite
 
 ### Testing
 - pytest
@@ -63,7 +63,7 @@ Development is done using a **vertical slice approach**:
 
 - Authentication system (Register / Login / Password Reset)
 - Core task management MVP
-- Clean UI implementation based on initial mockups
+- Frontend foundation ready; authentication, workspaces, and tasks will be implemented and tested in stages. See [frontend setup](frontend/README.md).
 
 ---
 
