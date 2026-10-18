@@ -35,7 +35,7 @@ test('deep links fall back to the router and keyboard users can return home', as
   ).toBeVisible();
   await page.getByRole('link', { name: 'Back to Donee' }).focus();
   await page.keyboard.press('Enter');
-  await expect(page).toHaveURL('/');
+  await expect(page).toHaveURL('/login');
   await expect(
     page.getByRole('heading', { name: 'Less noise. More doing.' }),
   ).toBeVisible();

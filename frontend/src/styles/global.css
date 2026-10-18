@@ -79,7 +79,7 @@ button:disabled {
   color: var(--color-accent);
 }
 
-.pixel-ghost {
+.pixel-computer {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   grid-template-rows: repeat(12, 1fr);
@@ -88,8 +88,15 @@ button:disabled {
   height: 1.75rem;
   color: var(--color-accent);
 }
-.pixel-ghost [data-filled='true'] {
+.pixel-computer [data-pixel='1'] {
   background: currentColor;
+}
+.pixel-computer [data-pixel='2'] {
+  background: var(--color-selected);
+}
+.computer-large {
+  width: 3.75rem;
+  height: 3.75rem;
 }
 
 .edition,

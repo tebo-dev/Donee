@@ -5,7 +5,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: 1,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: 'http://127.0.0.1:4173',
@@ -13,9 +13,22 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-  webServer: {
-    command: 'npm run build && npm run preview',
-    url: 'http://127.0.0.1:4173',
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      command: `"${process.env.DONEE_TEST_PYTHON || (process.platform === 'win32' ? '../venv/Scripts/python.exe' : '../venv/bin/python')}" e2e/support/api_server.py`,
+      url: 'http://127.0.0.1:8011/openapi.json',
+      env: { DONEE_E2E_BACKEND: '1' },
+      reuseExistingServer: false,
+    },
+    {
+      command: 'npm run build && npm run preview',
+      url: 'http://127.0.0.1:4173',
+      env: {
+        API_PROXY_TARGET: 'http://127.0.0.1:8011',
+        VITE_API_BASE_URL: '/api',
+      },
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+  ],
 });

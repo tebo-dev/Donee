@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom';
-import { PixelGhost } from './PixelGhost';
+import { PixelComputer } from './PixelComputer';
 
 export function Brand() {
   return (
     <Link className="brand" to="/" aria-label="Donee home">
-      <PixelGhost />
+      <PixelComputer />
       <span>
         donee<span className="brand-dot">.</span>
       </span>

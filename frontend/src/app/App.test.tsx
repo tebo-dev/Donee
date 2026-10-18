@@ -2,15 +2,21 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider } from '../features/auth/AuthProvider';
 import { App } from './App';
 
 describe('app navigation', () => {
   it('recovers from an unknown route through the home link', async () => {
     const user = userEvent.setup();
     render(
-      <MemoryRouter initialEntries={['/missing']}>
-        <App />
-      </MemoryRouter>,
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={['/missing']}>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </MemoryRouter>
+      </QueryClientProvider>,
     );
 
     expect(

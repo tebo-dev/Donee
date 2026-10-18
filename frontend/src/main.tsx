@@ -11,6 +11,7 @@ import { App } from './app/App';
 import { AppProviders } from './app/AppProviders';
 import './styles/tokens.css';
 import './styles/global.css';
+import './styles/auth.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
