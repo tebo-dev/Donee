@@ -31,7 +31,7 @@ export function SessionGate({ guest = false }: { guest?: boolean }) {
       </Container>
     );
   if (guest && session.status === 'authenticated')
-    return <Navigate to="/account" replace state={location.state} />;
+    return <Navigate to="/workspaces" replace state={location.state} />;
   if (!guest && session.status !== 'authenticated')
     return <Navigate to="/login" replace />;
   return <Outlet />;

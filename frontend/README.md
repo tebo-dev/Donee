@@ -1,6 +1,6 @@
 # Donee frontend
 
-Donee's React, TypeScript, and Vite frontend. Includes registration, sign-in, password recovery, and a protected account page. Appearance settings offer Matrix, Terminal, Dracula, and Akira themes, plus IBM Plex Mono and Fira Code for inputs and small details.
+Donee's React, TypeScript, and Vite frontend. Includes registration, sign-in, password recovery, account details, and workspace browsing, creation, and renaming. Appearance settings offer Matrix, Terminal, Dracula, and Akira themes, plus IBM Plex Mono and Fira Code for inputs and small details.
 
 ## Development
 
@@ -17,6 +17,10 @@ Start the FastAPI backend separately with its database and mail provider configu
 
 Use `/login` or `/register` to get started. Password recovery begins at `/forgot-password` and uses the six-digit code delivered by the backend's email service. In development, the backend sends email to its configured development recipient. Recovery details stay in memory; keep the tab open until the reset is complete. `/account` requires a server-verified session.
 
+Sign-in opens `/workspaces`. Search the list, create a space, or open one at `/workspaces/:id`. Owners can rename a workspace in `/workspaces/:id/settings`; changes are saved through the API. On the list, focus a workspace row and use `j`/`k`, arrow keys, Home/End, and Enter to navigate. Arrow Down moves from the search field to the first result. Escape closes the creation dialog when a save is not in progress.
+
+The current backend lists only owned workspaces. Accessible shared spaces can be opened by direct link, with read-only settings when ownership cannot be confirmed. Workspace deletion, invitations, and membership management have no API endpoints and are not offered. Task tools will be added in the task stage; no mock tasks or task counts are displayed.
+
 The access token is stored in this tab's session storage and verified through `/auth/me` after a reload, on window focus, and periodically. It expires according to the backend's token lifetime. Sign-out clears this tab's token and cached data. The current backend provides no refresh-token or logout/revocation endpoint; password reset invalidates older tokens. No persistent “remember me” option is provided.
 
 ## Checks
@@ -27,7 +31,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-`check` runs formatting, linting, unit tests, TypeScript, and the production build. Browser tests serve the built frontend on port 4173 and run the existing FastAPI app on port 8011 with a temporary SQLite database and captured email delivery. A fixed `123456` code is used only inside that test process. They exercise real registration, sign-in, profile verification, password reset, and token invalidation, plus network-error feedback, keyboard behavior, narrow layouts, and automated accessibility. Mailgun delivery and production PostgreSQL behavior require separate environment verification.
+`check` runs formatting, linting, unit tests, TypeScript, and the production build. Browser tests serve the built frontend on port 4173 and run the existing FastAPI app on port 8011 with a temporary SQLite database and captured email delivery. A fixed `123456` code is used only inside that test process. They exercise real auth and workspace operations, persistence, access denial, and viewer permissions. Test-only viewer membership is seeded directly in the temporary database because membership management has no public API. Empty-list and network-error scenarios use intercepted responses; production components always call the API. Tests also check keyboard behavior, narrow layouts, and automated accessibility. Mailgun delivery and production PostgreSQL behavior require separate environment verification.
 
 Browser tests require the backend's Python dependencies. By default they use `../venv/Scripts/python.exe` on Windows or `../venv/bin/python` elsewhere. Set `DONEE_TEST_PYTHON` to use another Python interpreter. Both test ports must be free. The isolated API runner is test-only and is not part of the built frontend.
 
@@ -38,11 +42,12 @@ Use `npm run format` to format changes, `npm run test:watch` for unit tests, and
 - `src/app`: application routing and shared providers.
 - `src/components`: appearance controls, brand, and pixel computer.
 - `src/features/auth`: auth pages, form validation, session handling, and recovery flow.
+- `src/features/workspaces`: workspace pages, server-state queries, validation, and mutations.
 - `src/lib`: API transport and error handling.
 - `src/pages`: missing-route page.
 - `src/styles`: theme tokens and global styles.
 - `src/test` and `e2e`: component and browser test setup.
-- React Router handles routes; TanStack Query is ready for server state.
+- React Router handles routes; TanStack Query caches server state by signed-in user and refreshes it after changes.
 - React Hook Form and Zod validate auth forms against the backend's contracts.
 - Phosphor icons and locally bundled fonts support the approved design.
 

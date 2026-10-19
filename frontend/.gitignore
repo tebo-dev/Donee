@@ -9,3 +9,7 @@ test-results/
 .env
 .env.*
 !.env.example
+
+# Frontend source is not a Python build artifact.
+!/src/lib/
+!/src/lib/**

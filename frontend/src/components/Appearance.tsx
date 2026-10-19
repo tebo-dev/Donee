@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Palette, X } from '@phosphor-icons/react';
+import { Palette } from '@phosphor-icons/react/dist/csr/Palette';
+import { X } from '@phosphor-icons/react/dist/csr/X';
 
 const themes = ['matrix', 'terminal', 'dracula', 'akira'] as const;
 const fonts = ['plex', 'fira'] as const;

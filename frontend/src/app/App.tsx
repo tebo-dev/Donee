@@ -14,6 +14,9 @@ import {
 } from '../features/auth/RecoveryPages';
 import { SessionGate } from '../features/auth/SessionGate';
 import { AccountPage } from '../features/auth/AccountPage';
+import { WorkspaceShell } from '../features/workspaces/WorkspaceShell';
+import { WorkspaceListPage } from '../features/workspaces/WorkspaceListPage';
+import { WorkspacePage } from '../features/workspaces/WorkspacePage';
 
 const titles: Record<string, string> = {
   '/login': 'Sign in',
@@ -26,8 +29,9 @@ const titles: Record<string, string> = {
 
 export function App() {
   const { pathname } = useLocation();
+  const workspaceRoute = pathname.startsWith('/workspaces');
   useEffect(() => {
-    document.title = `${titles[pathname] || 'A quiet corner'} / Donee`;
+    document.title = `${titles[pathname] || (pathname.startsWith('/workspaces') ? 'Your spaces' : 'A quiet corner')} / Donee`;
     const frame = requestAnimationFrame(() => {
       const target =
         document.querySelector<HTMLElement>('#auth-title') ||
@@ -38,13 +42,15 @@ export function App() {
     return () => cancelAnimationFrame(frame);
   }, [pathname]);
   return (
-    <div className="app-shell">
+    <div className={`app-shell${workspaceRoute ? ' workspace-app' : ''}`}>
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
       <header className="app-header">
         <Brand />
-        <span className="edition">[ PERSONAL SPACE ]</span>
+        <span className="edition">
+          {workspaceRoute ? '~/ personal_space' : '[ PERSONAL SPACE ]'}
+        </span>
         <Appearance />
       </header>
       <Routes>
@@ -62,6 +68,14 @@ export function App() {
         </Route>
         <Route element={<SessionGate />}>
           <Route path="/account" element={<AccountPage />} />
+          <Route path="/workspaces" element={<WorkspaceShell />}>
+            <Route index element={<WorkspaceListPage />} />
+            <Route path=":workspaceId" element={<WorkspacePage />} />
+            <Route
+              path=":workspaceId/settings"
+              element={<WorkspacePage settings />}
+            />
+          </Route>
         </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

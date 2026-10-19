@@ -1,4 +1,4 @@
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { PixelComputer } from '../../components/PixelComputer';
 import { useAuth } from './auth-context';
 
@@ -23,12 +23,14 @@ export function AccountPage() {
         Signed in as <strong>{session.user?.email}</strong>
       </p>
       <div className="next-stage">
-        <span className="eyebrow">UP NEXT / WORKSPACES</span>
+        <span className="eyebrow">YOUR LITTLE CORNERS</span>
         <p>
-          Your account is ready. Your workspace is the next little piece we're
-          building.
+          A place for your plans, your ideas, and the things you want to do.
         </p>
       </div>
+      <Link className="primary account-spaces-link" to="/workspaces">
+        Open your workspaces <span aria-hidden="true">↗</span>
+      </Link>
       <button className="secondary" onClick={signOut}>
         Sign out of this tab <span aria-hidden="true">↗</span>
       </button>

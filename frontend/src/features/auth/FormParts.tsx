@@ -4,7 +4,9 @@ import {
   type InputHTMLAttributes,
   type ReactNode,
 } from 'react';
-import { Eye, EyeSlash, ArrowRight } from '@phosphor-icons/react';
+import { Eye } from '@phosphor-icons/react/dist/csr/Eye';
+import { EyeSlash } from '@phosphor-icons/react/dist/csr/EyeSlash';
+import { ArrowRight } from '@phosphor-icons/react/dist/csr/ArrowRight';
 import type { UseFormRegisterReturn } from 'react-hook-form';
 
 export function AuthPanel({

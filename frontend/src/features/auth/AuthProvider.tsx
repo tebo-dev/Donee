@@ -6,7 +6,8 @@ import {
   type ReactNode,
 } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { api, ApiError } from '../../lib/api';
+import { api, ApiError, type ApiOptions } from '../../lib/api';
+import type { ZodType } from 'zod';
 import { userSchema } from './contracts';
 import { AuthContext, type Session } from './auth-context';
 
@@ -79,12 +80,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveToken(accessToken);
     setSession({ status: 'authenticated', user });
   }
+  const request = useCallback(
+    async <T,>(
+      path: string,
+      schema: ZodType<T>,
+      options: Omit<ApiOptions, 'token'> = {},
+    ) => {
+      const version = generation.current;
+      if (!token.current) throw new ApiError('Please sign in again.', 401);
+      try {
+        const result = await api(path, schema, {
+          ...options,
+          token: token.current,
+        });
+        if (version !== generation.current)
+          throw new ApiError('Your session changed. Please try again.', 401);
+        return result;
+      } catch (error) {
+        if (
+          version === generation.current &&
+          error instanceof ApiError &&
+          error.status === 401
+        )
+          signOut();
+        throw error;
+      }
+    },
+    [signOut],
+  );
   return (
     <AuthContext.Provider
       value={{
         session,
         authenticate,
         signOut,
+        request,
         retry: () => {
           void restore();
         },

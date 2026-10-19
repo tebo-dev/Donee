@@ -29,7 +29,7 @@ export function LoginPage() {
     try {
       const result = await api('/auth/login', tokenSchema, { body: values });
       await authenticate(result.access_token);
-      navigate('/account', { replace: true });
+      navigate('/workspaces', { replace: true });
     } catch (error) {
       setError('root', {
         message: error instanceof Error ? error.message : 'Please try again.',

@@ -66,7 +66,8 @@ test('registration validates confirmation, handles real sign-in, restores the se
   await signIn(page, user.email, 'incorrect-password');
   await expect(page.getByRole('alert')).toHaveText('Invalid credentials.');
   await signIn(page, user.email);
-  await expect(page).toHaveURL('/account');
+  await expect(page).toHaveURL('/workspaces');
+  await page.goto('/account');
   await expect(
     page.getByRole('heading', { name: `You're home, ${user.username}.` }),
   ).toBeVisible();
@@ -132,7 +133,7 @@ test('password recovery verifies the code, changes the password, and invalidates
   await signIn(page, user.email);
   await expect(page.getByRole('alert')).toHaveText('Invalid credentials.');
   await signIn(page, user.email, 'a-new-little-key-456');
-  await expect(page).toHaveURL('/account');
+  await expect(page).toHaveURL('/workspaces');
 });
 
 test('unknown accounts receive the same recovery response and resend can be used after the cooldown', async ({
@@ -208,7 +209,8 @@ test('invalid stored tokens are removed and unavailable session checks offer ret
   ).toBeNull();
   const user = await seed(request);
   await signIn(page, user.email);
-  await expect(page).toHaveURL('/account');
+  await expect(page).toHaveURL('/workspaces');
+  await page.goto('/account');
   await page.route('**/api/auth/me', (route) => route.abort());
   await page.reload();
   await expect(
@@ -241,7 +243,7 @@ test('a completed password reset survives a failed profile fetch by offering sig
   );
   await page.unroute('**/api/auth/me');
   await signIn(page, user.email, 'yet-another-key-456');
-  await expect(page).toHaveURL('/account');
+  await expect(page).toHaveURL('/workspaces');
 });
 
 test('appearance persists, password visibility is accessible, and all auth pages fit on a phone', async ({

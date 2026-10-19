@@ -28,11 +28,16 @@ def main():
         )
 
         import uvicorn
+        from sqlalchemy import select
 
         import app.models  # noqa: F401
         from app.db.base import Base
-        from app.db.session import engine
+        from app.db.session import SessionLocal, engine
         from app.main import app as api
+        from app.models.workspace.workspace import Workspace
+        from app.models.workspace.workspace_member import WorkspaceMember
+        from app.schemas.auth.user import UserCreate
+        from app.services.auth.auth_service import register_user
 
         Base.metadata.create_all(engine)
         try:
@@ -44,6 +49,34 @@ def main():
                     return_value="123456",
                 ),
             ):
+                # Membership has no public management endpoint yet. Seed a viewer
+                # only in this temporary test database to exercise real access checks.
+                with SessionLocal() as db:
+                    owner = register_user(
+                        db,
+                        UserCreate(
+                            email="workspace-owner@example.com",
+                            username="space_owner",
+                            password="workspace-fixture-123",
+                        ),
+                    )
+                    viewer = register_user(
+                        db,
+                        UserCreate(
+                            email="workspace-viewer@example.com",
+                            username="space_viewer",
+                            password="workspace-fixture-123",
+                        ),
+                    )
+                    workspace = db.scalar(
+                        select(Workspace).where(Workspace.owner_id == owner.id)
+                    )
+                    db.add(
+                        WorkspaceMember(
+                            workspace_id=workspace.id, user_id=viewer.id, role="viewer"
+                        )
+                    )
+                    db.commit()
                 uvicorn.run(api, host="127.0.0.1", port=8011, log_level="warning")
         finally:
             engine.dispose()

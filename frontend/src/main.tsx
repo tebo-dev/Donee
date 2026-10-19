@@ -12,6 +12,7 @@ import { AppProviders } from './app/AppProviders';
 import './styles/tokens.css';
 import './styles/global.css';
 import './styles/auth.css';
+import './styles/workspaces.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
