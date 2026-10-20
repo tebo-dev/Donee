@@ -28,6 +28,7 @@ def main():
         )
 
         import uvicorn
+        from fastapi import Request, Response
         from sqlalchemy import select
 
         import app.models  # noqa: F401
@@ -40,8 +41,61 @@ def main():
         from app.services.auth.auth_service import register_user
 
         Base.metadata.create_all(engine)
+        # An isolated object store exercises the real attachment service without AWS.
+        objects = {}
+
+        @api.post("/__test/storage")
+        async def upload_test_file(request: Request):
+            form = await request.form()
+            file = form["file"]
+            content = await file.read()
+            objects[form["key"]] = {
+                "ContentLength": len(content),
+                "ContentType": file.content_type,
+                "body": content,
+            }
+            return Response(status_code=204)
+
+        @api.get("/__test/storage")
+        def download_test_file(key: str):
+            item = objects[key]
+            return Response(item["body"], media_type=item["ContentType"])
+
+        def presign(key, content_type, size):
+            return {
+                "url": "http://127.0.0.1:4173/api/__test/storage",
+                "fields": {"key": key},
+            }, 300
+
+        def download_url(key, *_args, **_kwargs):
+            return f"http://127.0.0.1:4173/api/__test/storage?key={key}", 300
+
         try:
             with (
+                patch(
+                    "app.services.task.attachment_service.create_presigned_upload_url",
+                    side_effect=presign,
+                ),
+                patch(
+                    "app.services.task.attachment_service.create_presigned_access_url",
+                    side_effect=download_url,
+                ),
+                patch(
+                    "app.services.task.attachment_service.get_s3_object_metadata",
+                    side_effect=lambda key: objects.get(key),
+                ),
+                patch(
+                    "app.services.task.attachment_service.check_s3_object_exists",
+                    side_effect=lambda key: key in objects,
+                ),
+                patch(
+                    "app.services.task.attachment_service.delete_s3_object",
+                    side_effect=lambda key: objects.pop(key, None),
+                ),
+                patch(
+                    "app.services.task.task_service.delete_s3_object",
+                    side_effect=lambda key: objects.pop(key, None),
+                ),
                 patch("app.services.auth.auth_service.send_email"),
                 patch("app.services.auth.password_reset_service.send_email"),
                 patch(

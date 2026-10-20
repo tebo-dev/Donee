@@ -24,10 +24,8 @@ export function Modal({
       className="workspace-dialog"
       aria-labelledby="workspace-dialog-title"
       onCancel={(event) => {
-        if (busy) event.preventDefault();
-      }}
-      onClose={() => {
-        if (!dialog.current?.open) onClose();
+        event.preventDefault();
+        if (!busy) onClose();
       }}
     >
       <div className="workspace-dialog-heading">
@@ -40,7 +38,7 @@ export function Modal({
           className="icon-button"
           disabled={busy}
           aria-label="Close dialog"
-          onClick={() => dialog.current?.close()}
+          onClick={onClose}
         >
           <X size={20} aria-hidden="true" />
         </button>

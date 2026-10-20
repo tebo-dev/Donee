@@ -21,3 +21,4 @@ createRoot(document.getElementById('root')!).render(
     </AppProviders>
   </StrictMode>,
 );
+import './styles/tasks.css';

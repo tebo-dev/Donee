@@ -20,7 +20,7 @@ export type ApiOptions = {
   body?: unknown;
   token?: string;
   signal?: AbortSignal;
-  method?: 'GET' | 'POST' | 'PATCH';
+  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
 };
 
 export async function api<T>(

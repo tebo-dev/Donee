@@ -1,13 +1,13 @@
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { ArrowLeft } from '@phosphor-icons/react/dist/csr/ArrowLeft';
-import { ArrowUpRight } from '@phosphor-icons/react/dist/csr/ArrowUpRight';
+
 import { FolderSimple } from '@phosphor-icons/react/dist/csr/FolderSimple';
 import { GearSix } from '@phosphor-icons/react/dist/csr/GearSix';
 import { useWorkspace, useWorkspaces } from './queries';
 import { createdDate } from './contracts';
 import { WorkspaceError } from './WorkspaceError';
 import { RenameWorkspace } from './RenameWorkspace';
-import { PixelComputer } from '../../components/PixelComputer';
+import { TaskBoard } from '../tasks/TaskBoard';
 
 export function WorkspacePage({ settings = false }: { settings?: boolean }) {
   const { workspaceId = '' } = useParams();
@@ -128,25 +128,11 @@ export function WorkspacePage({ settings = false }: { settings?: boolean }) {
           </div>
         </section>
       ) : (
-        <section className="workspace-ready" aria-labelledby="ready-title">
-          <PixelComputer large />
-          <p className="eyebrow">ROOM FOR YOUR NEXT IDEA</p>
-          <h2 id="ready-title">
-            Good things start
-            <br />
-            <span>with a little space.</span>
-          </h2>
-          <p>This corner is yours. Task tools are coming next.</p>
-          {canRename && (
-            <Link
-              className="workspace-inline-link"
-              to={`/workspaces/${workspace.id}/settings`}
-            >
-              Make it feel like yours{' '}
-              <ArrowUpRight size={15} aria-hidden="true" />
-            </Link>
-          )}
-        </section>
+        <TaskBoard
+          key={workspace.id}
+          workspaceId={workspace.id}
+          canEdit={canRename}
+        />
       )}
       <dl className="workspace-facts">
         <div>

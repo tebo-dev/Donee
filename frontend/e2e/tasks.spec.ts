@@ -1,0 +1,439 @@
+import {
+  test,
+  expect,
+  type APIRequestContext,
+  type Page,
+} from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+
+async function seed(request: APIRequestContext) {
+  const id = crypto.randomUUID().slice(0, 8);
+  const account = {
+    email: `tasks_${id}@example.com`,
+    username: `tasks_${id}`,
+    password: 'tasks-test-123',
+  };
+  expect(
+    (await request.post('/api/auth/register', { data: account })).status(),
+  ).toBe(201);
+  const login = await request.post('/api/auth/login', {
+    data: { email: account.email, password: account.password },
+  });
+  expect(login.status()).toBe(200);
+  const { access_token: token } = (await login.json()) as {
+    access_token: string;
+  };
+  const headers = { Authorization: `Bearer ${token}` };
+  const { workspaces } = (await (
+    await request.get('/api/workspaces', { headers })
+  ).json()) as { workspaces: { id: string }[] };
+  return { token, headers, workspace: workspaces[0]!.id };
+}
+async function open(
+  page: Page,
+  account: Awaited<ReturnType<typeof seed>>,
+  suffix = '',
+) {
+  await page.goto('/login');
+  await page.evaluate(
+    (token) => sessionStorage.setItem('donee-session-token', token),
+    account.token,
+  );
+  await page.goto(`/workspaces/${account.workspace}${suffix}`);
+  await expect(
+    page.getByRole('heading', { name: 'Things to do' }),
+  ).toBeVisible();
+}
+async function create(
+  request: APIRequestContext,
+  account: Awaited<ReturnType<typeof seed>>,
+  title: string,
+) {
+  const response = await request.post('/api/tasks', {
+    headers: account.headers,
+    data: {
+      workspace_id: account.workspace,
+      title,
+      description: 'A real persisted description.',
+      priority: 2,
+      due_at: '2026-10-20',
+    },
+  });
+  expect(response.status()).toBe(201);
+  return (await response.json()) as {
+    id: string;
+    title: string;
+    status: string;
+    description: string;
+  };
+}
+
+test('create, edit, complete, reopen, archive and delete persisted tasks', async ({
+  page,
+  request,
+}) => {
+  const account = await seed(request);
+  await open(page, account);
+  await page.getByRole('button', { name: 'New task', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Task title').fill('x');
+  await dialog
+    .getByRole('button', { name: 'Create task', exact: true })
+    .click();
+  await expect(dialog.getByText('Use at least 2 characters.')).toBeVisible();
+  await dialog.getByLabel('Task title').fill('Ship a small thing');
+  await dialog
+    .getByLabel('Description', { exact: true })
+    .fill('Keep the real details here.');
+  await dialog.getByLabel('Due date').fill('2026-10-25');
+  await dialog
+    .getByRole('button', { name: 'Create task', exact: true })
+    .click();
+  await expect(dialog).not.toBeVisible();
+  await page.getByRole('button', { name: /Ship a small thing.*To do/ }).click();
+  await expect(dialog.getByLabel('Description', { exact: true })).toHaveValue(
+    'Keep the real details here.',
+  );
+  await dialog
+    .getByRole('combobox', { name: 'Status', exact: true })
+    .selectOption('in_progress');
+  await dialog
+    .getByRole('combobox', { name: 'Priority', exact: true })
+    .selectOption('1');
+  await dialog.getByRole('button', { name: 'Save task', exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByRole('button', { name: /Ship a small thing.*In progress.*P1/ }),
+  ).toBeVisible();
+  await page
+    .getByRole('button', { name: 'Complete Ship a small thing', exact: true })
+    .click();
+  await page
+    .getByRole('combobox', { name: 'Show', exact: true })
+    .selectOption('done');
+  await expect(
+    page.getByRole('button', {
+      name: 'Reopen Ship a small thing',
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page
+    .getByRole('button', { name: 'Reopen Ship a small thing', exact: true })
+    .click();
+  await page
+    .getByRole('combobox', { name: 'Show', exact: true })
+    .selectOption('all');
+  await page.getByRole('button', { name: /Ship a small thing.*To do/ }).click();
+  await dialog
+    .getByRole('combobox', { name: 'Status', exact: true })
+    .selectOption('archived');
+  await dialog.getByRole('button', { name: 'Save task', exact: true }).click();
+  await page
+    .getByRole('button', { name: /Ship a small thing.*Archived/ })
+    .click();
+  await dialog
+    .getByRole('button', { name: 'Delete task', exact: true })
+    .click();
+  await dialog.getByRole('button', { name: 'Keep editing' }).click();
+  await dialog
+    .getByRole('button', { name: 'Delete task', exact: true })
+    .click();
+  await dialog.getByRole('button', { name: 'Delete permanently' }).click();
+  await expect(dialog).not.toBeVisible();
+  const list = await (
+    await request.get(`/api/tasks?workspace_id=${account.workspace}`, {
+      headers: account.headers,
+    })
+  ).json();
+  expect(list.total).toBe(0);
+});
+
+test('tags and link attachments persist; rename and removal use real routes', async ({
+  page,
+  request,
+}) => {
+  const account = await seed(request);
+  const task = await create(request, account, 'Research a small idea');
+  await open(page, account);
+  await page.getByRole('button', { name: 'Manage tags' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Tag name').fill('Research');
+  await dialog.getByRole('button', { name: 'Create tag' }).click();
+  await expect(
+    dialog.getByRole('button', { name: 'Edit Research' }),
+  ).toBeVisible();
+  await dialog.getByRole('button', { name: 'Edit Research' }).click();
+  await dialog.getByLabel('Tag name').fill('Ideas');
+  await dialog.getByRole('button', { name: 'Save tag' }).click();
+  await expect(
+    dialog.getByRole('button', { name: 'Edit Ideas' }),
+  ).toBeVisible();
+  await dialog.getByRole('button', { name: 'Close dialog' }).click();
+  await page
+    .getByRole('button', { name: /Research a small idea.*To do/ })
+    .click();
+  await dialog.getByRole('checkbox', { name: 'Ideas' }).check();
+  await dialog.getByRole('button', { name: 'Save task', exact: true }).click();
+  await page
+    .getByRole('button', { name: /Research a small idea.*Ideas/ })
+    .click();
+  await dialog.getByLabel('Attachment name', { exact: true }).fill('Reference');
+  await dialog.getByLabel('Link address').fill('https://example.com/research');
+  await dialog.getByRole('button', { name: 'Add link', exact: true }).click();
+  await expect(dialog.getByRole('link', { name: 'Reference' })).toHaveAttribute(
+    'href',
+    'https://example.com/research',
+  );
+  await dialog.getByRole('button', { name: 'Rename Reference' }).click();
+  await dialog.getByLabel('Attachment name', { exact: true }).fill('Reading');
+  await dialog
+    .getByRole('button', { name: 'Rename attachment', exact: true })
+    .click();
+  await expect(dialog.getByRole('link', { name: 'Reading' })).toBeVisible();
+  await dialog.getByRole('button', { name: 'Remove Reading' }).click();
+  await dialog
+    .getByRole('button', { name: 'Remove attachment', exact: true })
+    .click();
+  await expect(dialog.getByRole('link', { name: 'Reading' })).not.toBeVisible();
+  await dialog.getByRole('checkbox', { name: 'Ideas' }).uncheck();
+  await dialog.getByRole('button', { name: 'Save task', exact: true }).click();
+  const persisted = await (
+    await request.get(`/api/tasks/${task.id}`, { headers: account.headers })
+  ).json();
+  expect(persisted.tags.total).toBe(0);
+  await page.getByRole('button', { name: 'Manage tags' }).click();
+  await dialog.getByRole('button', { name: 'Delete Ideas' }).click();
+  await dialog.getByRole('button', { name: 'Delete tag', exact: true }).click();
+  await expect(
+    dialog.getByRole('button', { name: 'Edit Ideas' }),
+  ).not.toBeVisible();
+});
+
+test('keyboard navigation, dirty-close confirmation and failed saves preserve drafts', async ({
+  page,
+  request,
+}) => {
+  const account = await seed(request);
+  await create(request, account, 'Alpha task');
+  await create(request, account, 'Beta task');
+  await open(page, account);
+  const first = page.getByRole('button', { name: /Alpha task.*To do/ });
+  await first.focus();
+  await page.keyboard.press('j');
+  await expect(
+    page.getByRole('button', { name: /Beta task.*To do/ }),
+  ).toBeFocused();
+  await page.keyboard.press('k');
+  await page.keyboard.press('l');
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Task title').fill('Draft xja/k');
+  await page.keyboard.press('Escape');
+  await expect(
+    dialog.getByRole('heading', { name: 'Discard your changes?' }),
+  ).toBeVisible();
+  await dialog.getByRole('button', { name: 'Keep editing' }).click();
+  await expect(dialog.getByLabel('Task title')).toHaveValue('Draft xja/k');
+  await page.route('**/api/tasks/*', (route) =>
+    route.request().method() === 'PATCH' ? route.abort() : route.continue(),
+  );
+  await dialog.getByRole('button', { name: 'Save task', exact: true }).click();
+  await expect(dialog.getByRole('alert')).toContainText('Cannot reach Donee');
+  await expect(dialog.getByLabel('Task title')).toHaveValue('Draft xja/k');
+  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await dialog
+    .getByRole('button', { name: 'Discard changes', exact: true })
+    .click();
+  await expect(first).toBeFocused();
+  await page.keyboard.press('/');
+  await expect(page.getByLabel('Search tasks')).toBeFocused();
+  await page.getByLabel('Search tasks').fill('Beta');
+  await expect(first).not.toBeVisible();
+});
+
+test('search includes tasks after first API page and filters reset', async ({
+  page,
+  request,
+}) => {
+  const account = await seed(request);
+  for (let i = 0; i < 102; i++)
+    await create(request, account, `Item ${String(i).padStart(3, '0')}`);
+  await open(page, account);
+  await expect(page.getByText('102 of 102 tasks')).toBeVisible();
+  await page.getByLabel('Search tasks').fill('Item 101');
+  await expect(
+    page.getByRole('button', { name: /Item 101.*To do/ }),
+  ).toBeVisible();
+  await page.getByLabel('Search tasks').fill('nothing matches');
+  await page.getByRole('button', { name: 'Show all tasks' }).click();
+  await expect(page.getByText('102 of 102 tasks')).toBeVisible();
+});
+
+test('failed loading, invalid links and foreign task IDs do not expose task data', async ({
+  page,
+  request,
+}) => {
+  const account = await seed(request);
+  const other = await seed(request);
+  const task = await create(request, other, 'Private other task');
+  await page.route('**/api/tasks?**', (route) => route.abort());
+  await open(page, account);
+  await expect(page.getByRole('alert')).toContainText('Cannot reach Donee');
+  await page.unroute('**/api/tasks?**');
+  await page.getByRole('button', { name: 'Retry tasks' }).click();
+  await expect(page.getByText('A clear screen. A fresh start.')).toBeVisible();
+  await page.goto(`/workspaces/${account.workspace}?task=${task.id}`);
+  await expect(page.getByRole('dialog').getByRole('alert')).toBeVisible();
+  await expect(page.getByText('Private other task')).not.toBeVisible();
+  await page.goto(`/workspaces/${account.workspace}?task=invalid`);
+  await expect(page.getByRole('alert')).toHaveText(
+    'This task address is invalid.',
+  );
+});
+
+test('task views fit mobile and every theme passes accessibility checks', async ({
+  page,
+  request,
+}, testInfo) => {
+  const account = await seed(request);
+  await create(
+    request,
+    account,
+    'Make room for a really long task title that wraps on a small screen',
+  );
+  await open(page, account);
+  for (const theme of ['matrix', 'terminal', 'dracula', 'akira']) {
+    await page.evaluate(
+      (value) => (document.documentElement.dataset.theme = value),
+      theme,
+    );
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  }
+  for (const width of [320, 768, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: testInfo.outputPath(`tasks-${width}.png`),
+      fullPage: true,
+    });
+  }
+  await page.getByRole('button', { name: /Make room.*To do/ }).click();
+  await expect(page.getByLabel('Task title')).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.setViewportSize({ width: 320, height: 900 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: testInfo.outputPath('editor-320.png'),
+    fullPage: true,
+  });
+});
+
+test('file upload, download, transfer failure and deletion use attachment lifecycle', async ({
+  page,
+  request,
+}) => {
+  const account = await seed(request);
+  const task = await create(request, account, 'Keep a useful file');
+  await open(page, account, `?task=${task.id}`);
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Upload file').setInputFiles({
+    name: 'reference.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('Real test file contents'),
+  });
+  await expect(dialog.getByText('uploaded · 1 KB')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Download', exact: true }).click();
+  const download = dialog.getByRole('link', {
+    name: 'Download file',
+    exact: true,
+  });
+  await expect(download).toBeVisible();
+  expect(
+    await (await request.get((await download.getAttribute('href'))!)).text(),
+  ).toBe('Real test file contents');
+  await page.route('**/api/__test/storage', (route) => route.abort());
+  await dialog.getByLabel('Upload file').setInputFiles({
+    name: 'failed.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('Failure fixture'),
+  });
+  await expect(dialog.getByText('failed · 1 KB')).toBeVisible();
+  await expect(dialog.getByRole('alert')).toContainText(
+    'Upload could not finish',
+  );
+  await dialog
+    .getByRole('button', { name: 'Remove failed.txt', exact: true })
+    .click();
+  await dialog
+    .getByRole('button', { name: 'Remove attachment', exact: true })
+    .click();
+  await expect(dialog.getByText('failed · 1 KB')).not.toBeVisible();
+  await dialog
+    .getByRole('button', { name: 'Remove reference.txt', exact: true })
+    .click();
+  await dialog
+    .getByRole('button', { name: 'Remove attachment', exact: true })
+    .click();
+  await expect(
+    dialog.getByRole('button', { name: 'Download', exact: true }),
+  ).not.toBeVisible();
+});
+
+test('editing completed task details preserves status and completion metadata', async ({
+  page,
+  request,
+}) => {
+  const account = await seed(request);
+  const task = await create(request, account, 'Already finished');
+  const completed = await (
+    await request.patch(`/api/tasks/${task.id}`, {
+      headers: account.headers,
+      data: { status: 'done' },
+    })
+  ).json();
+  await open(page, account, `?task=${task.id}`);
+  const dialog = page.getByRole('dialog');
+  await dialog
+    .getByLabel('Description', { exact: true })
+    .fill('Clarified after completion.');
+  const patch = page.waitForRequest(
+    (r) => r.url().endsWith(`/tasks/${task.id}`) && r.method() === 'PATCH',
+  );
+  await dialog.getByRole('button', { name: 'Save task', exact: true }).click();
+  expect((await patch).postDataJSON()).not.toHaveProperty('status');
+  await expect(dialog).not.toBeVisible();
+  const after = await (
+    await request.get(`/api/tasks/${task.id}`, { headers: account.headers })
+  ).json();
+  expect(after.status).toBe('done');
+  expect(after.completed_at).toBe(completed.completed_at);
+  expect(after.description).toBe('Clarified after completion.');
+});
+
+test('pending uploads can be verified after a confirmation outage', async ({
+  page,
+  request,
+}) => {
+  const account = await seed(request);
+  const task = await create(request, account, 'Verify a pending file');
+  await open(page, account, `?task=${task.id}`);
+  await page.route('**/attachments/*/uploaded', (route) => route.abort());
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Upload file').setInputFiles({
+    name: 'pending.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('Pending verification'),
+  });
+  await expect(dialog.getByText('pending · 1 KB')).toBeVisible();
+  await page.unroute('**/attachments/*/uploaded');
+  await dialog.getByRole('button', { name: 'Verify upload' }).click();
+  await expect(dialog.getByText('uploaded · 1 KB')).toBeVisible();
+});
