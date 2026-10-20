@@ -33,7 +33,7 @@ Manage tags from the task toolbar. Tags can be created, renamed, recolored, assi
 
 Saved tasks accept HTTP(S) links and PDF, PNG, JPEG, WebP, or text files up to 10 MB. File uploads use the server's presigned multipart POST, followed by server verification. A pending upload can be verified again; failed entries can be removed before retrying. Downloads request a short-lived link. Renaming and deleting attachments use the existing API. Configure the storage bucket to accept uploads from the frontend origin.
 
-Within the task area, `j`/`k` or arrows move through rows, `l`/Enter opens a task, `x` completes/reopens, `/` focuses search, and `a` creates a task. Single-key shortcuts pause in editable controls. Ctrl/Cmd+Enter saves the editor; Escape closes it or asks to discard a draft. Every shortcut has a visible control equivalent. The `?` button lists the keys.
+On a workspace task page, `j`/`k` or arrows move through rows, `l`/Enter opens a task, `x` completes/reopens, `/` focuses search, and `a` creates a task. Navigation can enter the list from elsewhere on the page. Single-key shortcuts pause in editable controls and all open dialogs; Escape leaves search and focuses the first result. Ctrl/Cmd+Enter saves the editor; Escape closes it or asks to discard a draft. Every shortcut has a visible control equivalent. The `?` button lists the keys.
 
 Separate notes, comments, recurrence, reminders, subtasks, task assignment, and projects are not exposed by the current task API and are not offered. Description is the supported task text field. Editing is enabled for owned workspaces; the server enforces permissions on every operation.
 

@@ -15,6 +15,7 @@ import {
 import { useTaskApi, useTasks } from './queries';
 import { TaskEditor } from './TaskEditor';
 import { TagManager } from './TagManager';
+import { useTaskShortcuts } from './useTaskShortcuts';
 
 export function TaskBoard({
   workspaceId,
@@ -121,81 +122,22 @@ export function TaskBoard({
         a.title.localeCompare(b.title) ||
         a.id.localeCompare(b.id),
     );
+  useTaskShortcuts({
+    enabled: !selected && !manageTags && !help,
+    canEdit,
+    busy: toggle.isPending,
+    listRef,
+    searchRef,
+    onCreate: () => open('new'),
+    onHelp: () => setHelp(true),
+    onToggle: (id) => {
+      const task = visible.find((item) => item.id === id);
+      if (task) toggle.mutate(task);
+    },
+  });
   const done = tasks.filter((task) => task.status === 'done').length;
   return (
-    <section
-      className="task-board"
-      aria-label="Workspace tasks"
-      onKeyDown={(event) => {
-        if (
-          selected ||
-          manageTags ||
-          help ||
-          event.ctrlKey ||
-          event.metaKey ||
-          event.altKey ||
-          event.nativeEvent.isComposing ||
-          event.repeat
-        )
-          return;
-        const target = event.target as HTMLElement;
-        if (target.closest('input, textarea, select, [contenteditable="true"]'))
-          return;
-        if (event.key === 'a' && canEdit) {
-          event.preventDefault();
-          open('new');
-        }
-        if (event.key === '/') {
-          event.preventDefault();
-          searchRef.current?.focus();
-        }
-        if (event.key === '?') {
-          event.preventDefault();
-          setHelp(true);
-        }
-        const row = target.closest<HTMLElement>('[data-task-row]');
-        if (!row) return;
-        const buttons = [
-          ...listRef.current!.querySelectorAll<HTMLButtonElement>(
-            '[data-open-task]',
-          ),
-        ];
-        const index = buttons.findIndex(
-          (button) => button.closest('[data-task-row]') === row,
-        );
-        if (
-          ['j', 'k', 'ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)
-        ) {
-          event.preventDefault();
-          const next =
-            event.key === 'Home'
-              ? 0
-              : event.key === 'End'
-                ? buttons.length - 1
-                : Math.max(
-                    0,
-                    Math.min(
-                      buttons.length - 1,
-                      index + (['j', 'ArrowDown'].includes(event.key) ? 1 : -1),
-                    ),
-                  );
-          buttons[next]?.focus();
-        }
-        if (event.key === 'l') {
-          event.preventDefault();
-          buttons[index]?.click();
-        }
-        if (
-          event.key === 'x' &&
-          canEdit &&
-          !toggle.isPending &&
-          visible[index]
-        ) {
-          event.preventDefault();
-          toggle.mutate(visible[index]);
-        }
-      }}
-    >
+    <section className="task-board" aria-label="Workspace tasks">
       <div className="task-toolbar">
         <div>
           <p className="eyebrow">YOUR NEXT SMALL VICTORY</p>
@@ -461,7 +403,8 @@ export function TaskBoard({
             <dd>Close a dialog; confirm unsaved edits</dd>
           </dl>
           <p className="field-hint">
-            Single-key shortcuts work in the task area and pause while you type.
+            Shortcuts work anywhere on this task page and pause while you type
+            or use a dialog. Escape leaves search.
           </p>
         </Modal>
       )}

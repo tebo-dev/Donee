@@ -437,3 +437,80 @@ test('pending uploads can be verified after a confirmation outage', async ({
   await dialog.getByRole('button', { name: 'Verify upload' }).click();
   await expect(dialog.getByText('uploaded · 1 KB')).toBeVisible();
 });
+
+test('task shortcuts work on arrival, outside the list, and after leaving search', async ({
+  page,
+  request,
+}) => {
+  const account = await seed(request);
+  await create(request, account, 'Alpha shortcut task');
+  await create(request, account, 'Beta shortcut task');
+  await open(page, account);
+  const alpha = page.getByRole('button', {
+    name: /Alpha shortcut task.*To do/,
+  });
+  const beta = page.getByRole('button', { name: /Beta shortcut task.*To do/ });
+  await expect(alpha).toBeVisible();
+  await page.locator('#main-content').focus();
+  await page.keyboard.press('j');
+  await expect(alpha).toBeFocused();
+  await page.keyboard.press('j');
+  await expect(beta).toBeFocused();
+  await page.keyboard.press('k');
+  await expect(alpha).toBeFocused();
+  await page.getByRole('heading', { name: 'My Space', exact: true }).click();
+  await page.keyboard.press('/');
+  await expect(page.getByLabel('Search tasks')).toBeFocused();
+  await page.keyboard.type('Beta');
+  await page.keyboard.press('Escape');
+  await expect(beta).toBeFocused();
+  await page.keyboard.press('l');
+  await expect(page.getByRole('dialog').getByLabel('Task title')).toHaveValue(
+    'Beta shortcut task',
+  );
+  await page.keyboard.press('Escape');
+  await expect(beta).toBeFocused();
+  await page.getByRole('heading', { name: 'My Space', exact: true }).click();
+  await page.keyboard.press('a');
+  await expect(page.getByRole('dialog').getByLabel('Task title')).toHaveValue(
+    '',
+  );
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('?');
+  await expect(
+    page
+      .getByRole('dialog')
+      .getByRole('heading', { name: 'Keep your hands on the keys.' }),
+  ).toBeVisible();
+});
+
+test('task shortcuts respect other dialogs, editable fields, modifiers and route cleanup', async ({
+  page,
+  request,
+}) => {
+  const account = await seed(request);
+  await create(request, account, 'Keyboard guard task');
+  await open(page, account);
+  await expect(
+    page.getByRole('button', { name: /Keyboard guard task.*To do/ }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Appearance', exact: true }).click();
+  await page.keyboard.press('a');
+  await page.keyboard.press('/');
+  await page.keyboard.press('j');
+  await expect(page.getByRole('dialog')).toHaveCount(1);
+  await expect(page.getByLabel('Task title')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await page.getByLabel('Search tasks').fill('ajkx/?');
+  await expect(page.getByLabel('Search tasks')).toHaveValue('ajkx/?');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByLabel('Search tasks').fill('');
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Control+a');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.keyboard.press('x');
+  await expect(page.getByText('0 open', { exact: true })).toBeVisible();
+  await page.getByRole('link', { name: '~/spaces', exact: true }).click();
+  await page.keyboard.press('a');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});
