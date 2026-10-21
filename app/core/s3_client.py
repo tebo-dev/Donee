@@ -6,6 +6,7 @@ from uuid import UUID
 
 import boto3
 from botocore.client import BaseClient
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from app.core.config import settings
@@ -18,6 +19,9 @@ def get_s3_client() -> BaseClient:
     s3_client = boto3.client(
         "s3",
         region_name=settings.AWS_REGION,
+        # Browser uploads must reach the bucket's region without a CORS redirect.
+        endpoint_url=f"https://s3.{settings.AWS_REGION}.amazonaws.com",
+        config=Config(signature_version="s3v4", s3={"addressing_style": "virtual"}),
         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY.get_secret_value(),
     )
