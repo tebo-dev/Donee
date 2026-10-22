@@ -3,7 +3,7 @@ import { PixelComputer } from '../../components/PixelComputer';
 import { useAuth } from './auth-context';
 
 export function AccountPage() {
-  const { session, signOut } = useAuth();
+  const { session, signOut, signingOut } = useAuth();
   const location = useLocation();
   const state = location.state as { passwordReset?: boolean } | null;
   return (
@@ -31,7 +31,13 @@ export function AccountPage() {
       <Link className="primary account-spaces-link" to="/workspaces">
         Open your workspaces <span aria-hidden="true">↗</span>
       </Link>
-      <button className="secondary" onClick={signOut}>
+      <button
+        className="secondary"
+        disabled={signingOut}
+        onClick={() => {
+          void signOut();
+        }}
+      >
         Sign out of this tab <span aria-hidden="true">↗</span>
       </button>
     </main>

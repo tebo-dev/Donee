@@ -703,3 +703,12 @@ kbd {
     padding: 20px;
   }
 }
+
+.workspace-delete {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-border);
+}
+.workspace-delete p {
+  margin-block: 0.75rem;
+}

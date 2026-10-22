@@ -9,6 +9,7 @@ export function useTaskShortcuts({
   onCreate,
   onHelp,
   onToggle,
+  onLeaveSearch,
 }: {
   enabled: boolean;
   canEdit: boolean;
@@ -18,6 +19,7 @@ export function useTaskShortcuts({
   onCreate: () => void;
   onHelp: () => void;
   onToggle: (id: string) => void;
+  onLeaveSearch: () => void;
 }) {
   useEffect(() => {
     if (!enabled) return;
@@ -43,8 +45,7 @@ export function useTaskShortcuts({
       // Escape leaves search without deleting the query, so navigation can resume.
       if (target === searchRef.current && event.key === 'Escape') {
         event.preventDefault();
-        if (buttons[0]) buttons[0].focus();
-        else target.blur();
+        onLeaveSearch();
         return;
       }
       if (
@@ -117,5 +118,15 @@ export function useTaskShortcuts({
     }
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
-  }, [enabled, canEdit, busy, listRef, searchRef, onCreate, onHelp, onToggle]);
+  }, [
+    enabled,
+    canEdit,
+    busy,
+    listRef,
+    searchRef,
+    onCreate,
+    onHelp,
+    onToggle,
+    onLeaveSearch,
+  ]);
 }

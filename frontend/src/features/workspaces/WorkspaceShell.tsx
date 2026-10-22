@@ -11,7 +11,7 @@ import { useWorkspaces } from './queries';
 import { CreateWorkspace } from './CreateWorkspace';
 
 export function WorkspaceShell() {
-  const { session, signOut } = useAuth();
+  const { session, signOut, signingOut } = useAuth();
   const workspaces = useWorkspaces();
   const [creating, setCreating] = useState(false);
   const createTrigger = useRef<HTMLElement | null>(null);
@@ -116,7 +116,13 @@ export function WorkspaceShell() {
             <UserCircle size={17} aria-hidden="true" />
             Your account
           </Link>
-          <button className="sidebar-link" onClick={signOut}>
+          <button
+            className="sidebar-link"
+            disabled={signingOut}
+            onClick={() => {
+              void signOut();
+            }}
+          >
             <SignOut size={17} aria-hidden="true" />
             Sign out of this tab
           </button>

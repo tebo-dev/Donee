@@ -258,7 +258,7 @@ function ResetPasswordForm({ challenge }: Recovery) {
       // Reset codes are single-use: profile loading failure must lead to sign-in rather than resubmitting the consumed code.
       setPasswordChanged(true);
       try {
-        await authenticate(result.access_token);
+        await authenticate(result);
         navigate('/account', { replace: true, state: { passwordReset: true } });
       } catch {
         navigate('/login', {

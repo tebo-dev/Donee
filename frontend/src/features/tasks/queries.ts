@@ -12,26 +12,35 @@ export function useTaskApi(workspaceId: string) {
     refresh: () => client.invalidateQueries({ queryKey: key }),
   };
 }
-export function useTasks(workspaceId: string) {
+export type TaskFilters = {
+  search: string;
+  statuses: TaskPreview['status'][];
+  tagIds: string[];
+  dueFrom: string;
+  dueTo: string;
+  orderBy: string;
+  direction: string;
+  offset: number;
+};
+export function useTasks(workspaceId: string, filters: TaskFilters) {
   const { request, key } = useTaskApi(workspaceId);
   return useQuery({
-    queryKey: [...key, 'list'],
+    queryKey: [...key, 'list', filters],
     retry: false,
-    queryFn: async ({ signal }) => {
-      // Load every server page before offering workspace-wide search and filters.
-      const tasks: TaskPreview[] = [];
-      let total: number;
-      do {
-        const page = await request(
-          `/tasks?workspace_id=${workspaceId}&limit=100&offset=${tasks.length}`,
-          tasksSchema,
-          { signal },
-        );
-        tasks.push(...page.tasks);
-        total = page.total;
-        if (!page.tasks.length) break;
-      } while (tasks.length < total);
-      return [...new Map(tasks.map((task) => [task.id, task])).values()];
+    queryFn: ({ signal }) => {
+      const params = new URLSearchParams({
+        workspace_id: workspaceId,
+        limit: '50',
+        offset: String(filters.offset),
+        order_by: filters.orderBy,
+        direction: filters.direction,
+      });
+      if (filters.search) params.set('search', filters.search);
+      filters.statuses.forEach((status) => params.append('statuses', status));
+      filters.tagIds.forEach((id) => params.append('tag_ids', id));
+      if (filters.dueFrom) params.set('due_from', filters.dueFrom);
+      if (filters.dueTo) params.set('due_to', filters.dueTo);
+      return request(`/tasks?${params}`, tasksSchema, { signal });
     },
   });
 }

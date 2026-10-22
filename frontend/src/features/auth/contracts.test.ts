@@ -7,13 +7,13 @@ import {
 } from './contracts';
 
 describe('auth validation at the API boundary', () => {
-  it('matches backend whitespace normalization and rejects passwords outside its limits', () => {
+  it('preserves passwords exactly while normalizing email and rejects passwords outside its limits', () => {
     expect(
       loginSchema.parse({
         email: ' human@example.com ',
         password: '  longpassword  ',
       }),
-    ).toEqual({ email: 'human@example.com', password: 'longpassword' });
+    ).toEqual({ email: 'human@example.com', password: '  longpassword  ' });
     for (const password of ['short', 'x'.repeat(129)])
       expect(
         loginSchema.safeParse({ email: 'human@example.com', password }).success,

@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test } from './fixtures';
+import { expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 test('built app loads, stays within narrow viewports, and has accessible content', async ({

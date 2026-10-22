@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import {
+  useIsMutating,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { z } from 'zod';
 import { FormError } from '../auth/FormParts';
 import { messageSchema, safeUrl } from './contracts';
@@ -45,6 +50,9 @@ export function Attachments({
   onBusy: (busy: boolean) => void;
 }) {
   const { request, key } = useTaskApi(workspaceId);
+  const client = useQueryClient();
+  const deleting =
+    useIsMutating({ mutationKey: ['workspace-delete', workspaceId] }) > 0;
   const path = `/tasks/${taskId}/attachments`;
   const query = useQuery({
     queryKey: [...key, 'attachments', taskId],
@@ -58,7 +66,10 @@ export function Attachments({
   const [notice, setNotice] = useState('');
   const [download, setDownload] = useState<string>();
   const mutation = useMutation({
+    mutationKey: ['task-attachment', workspaceId],
     mutationFn: async (action: Action) => {
+      if (client.isMutating({ mutationKey: ['workspace-delete', workspaceId] }))
+        throw new Error('This workspace is being deleted.');
       setNotice('');
       setDownload(undefined);
       if (action.type === 'link') {
@@ -213,7 +224,7 @@ export function Attachments({
                 item.status === 'uploaded' && (
                   <button
                     className="secondary"
-                    disabled={mutation.isPending}
+                    disabled={mutation.isPending || deleting}
                     onClick={() => mutation.mutate({ type: 'download', item })}
                   >
                     Download
@@ -224,7 +235,7 @@ export function Attachments({
                   {item.status === 'pending' && (
                     <button
                       className="secondary"
-                      disabled={mutation.isPending}
+                      disabled={mutation.isPending || deleting}
                       onClick={() => mutation.mutate({ type: 'verify', item })}
                     >
                       Verify upload
@@ -232,7 +243,7 @@ export function Attachments({
                   )}
                   <button
                     className="secondary"
-                    disabled={mutation.isPending}
+                    disabled={mutation.isPending || deleting}
                     aria-label={`Rename ${item.attachment_name}`}
                     onClick={() => {
                       setEditing(item);
@@ -244,7 +255,7 @@ export function Attachments({
                   </button>
                   <button
                     className="danger-button"
-                    disabled={mutation.isPending}
+                    disabled={mutation.isPending || deleting}
                     aria-label={`Remove ${item.attachment_name}`}
                     onClick={() => {
                       setRemoving(item);
@@ -266,14 +277,14 @@ export function Attachments({
             <div className="task-actions">
               <button
                 className="secondary"
-                disabled={mutation.isPending}
+                disabled={mutation.isPending || deleting}
                 onClick={() => setRemoving(null)}
               >
                 Keep attachment
               </button>
               <button
                 className="primary"
-                disabled={mutation.isPending}
+                disabled={mutation.isPending || deleting}
                 onClick={() =>
                   mutation.mutate({ type: 'delete', item: removing })
                 }
@@ -295,7 +306,7 @@ export function Attachments({
                 );
               }}
             >
-              <fieldset disabled={mutation.isPending}>
+              <fieldset disabled={mutation.isPending || deleting}>
                 <label className="field">
                   Attachment name
                   <input
@@ -323,7 +334,7 @@ export function Attachments({
                   <button
                     type="button"
                     className="secondary"
-                    disabled={mutation.isPending}
+                    disabled={mutation.isPending || deleting}
                     onClick={() => {
                       setEditing(null);
                       setName('');
@@ -332,7 +343,10 @@ export function Attachments({
                     Cancel rename
                   </button>
                 )}
-                <button className="secondary" disabled={mutation.isPending}>
+                <button
+                  className="secondary"
+                  disabled={mutation.isPending || deleting}
+                >
                   {editing ? 'Rename attachment' : 'Add link'}
                 </button>
               </div>
@@ -346,7 +360,7 @@ export function Attachments({
                 <input
                   type="file"
                   accept={types.join(',')}
-                  disabled={mutation.isPending}
+                  disabled={mutation.isPending || deleting}
                   onChange={(event) => {
                     const file = event.target.files?.[0];
                     if (file) mutation.mutate({ type: 'file', file });

@@ -7,16 +7,16 @@ import { Modal } from '../../components/Modal';
 import { FormError } from '../auth/FormParts';
 import {
   localToday,
+  priorityLabels,
   statuses,
   statusLabels,
   taskSchema,
   type TaskPreview,
 } from './contracts';
-import { useTaskApi, useTasks } from './queries';
+import { useTaskApi, useTasks, useTags } from './queries';
 import { TaskEditor } from './TaskEditor';
 import { TagManager } from './TagManager';
 import { useTaskShortcuts } from './useTaskShortcuts';
-
 export function TaskBoard({
   workspaceId,
   canEdit,
@@ -24,14 +24,46 @@ export function TaskBoard({
   workspaceId: string;
   canEdit: boolean;
 }) {
-  const query = useTasks(workspaceId);
   const { request, refresh } = useTaskApi(workspaceId);
   const [params, setParams] = useSearchParams();
   const selected = params.get('task');
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('active');
-  const [sort, setSort] = useState('due');
+  const [sort, setSort] = useState('due_at');
   const [tag, setTag] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [offset, setOffset] = useState(0);
+  const [direction, setDirection] = useState('asc');
+  const [dueFrom, setDueFrom] = useState('');
+  const [dueTo, setDueTo] = useState('');
+  useEffect(() => {
+    if (search === debouncedSearch) return;
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(search);
+      setOffset(0);
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [search, debouncedSearch]);
+  const query = useTasks(workspaceId, {
+    search: debouncedSearch,
+    statuses:
+      status === 'all'
+        ? []
+        : status === 'active'
+          ? ['to do', 'in_progress', 'blocked']
+          : [status as TaskPreview['status']],
+    tagIds: tag ? [tag] : [],
+    dueFrom,
+    dueTo,
+    orderBy: sort,
+    direction,
+    offset,
+  });
+  const tagQuery = useTags(workspaceId);
+  // After deleting the last row of a page, return to the nearest valid page.
+  if (query.data && offset > 0 && offset >= query.data.total) {
+    setOffset(Math.max(0, Math.ceil(query.data.total / 50) - 1) * 50);
+  }
   const [manageTags, setManageTags] = useState(false);
   const [help, setHelp] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -39,6 +71,37 @@ export function TaskBoard({
   const trigger = useRef<HTMLElement | null>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const completionFocus = useRef<number | null>(null);
+  const searchFocusPending = useRef(false);
+  const leaveSearch = () => {
+    if (search !== debouncedSearch || query.isFetching) {
+      searchFocusPending.current = true;
+      searchRef.current?.blur();
+    } else {
+      const first =
+        listRef.current?.querySelector<HTMLButtonElement>('[data-open-task]');
+      if (first) first.focus();
+      else searchRef.current?.blur();
+    }
+  };
+  useEffect(() => {
+    if (
+      !searchFocusPending.current ||
+      search !== debouncedSearch ||
+      query.isFetching
+    )
+      return;
+    searchFocusPending.current = false;
+    if (
+      document.activeElement === document.body &&
+      !document.querySelector('dialog[open]')
+    ) {
+      (
+        listRef.current?.querySelector<HTMLButtonElement>('[data-open-task]') ||
+        searchRef.current
+      )?.focus();
+    }
+  }, [search, debouncedSearch, query.isFetching, query.data]);
+
   useEffect(() => {
     if (completionFocus.current === null) return;
     const rows =
@@ -94,34 +157,10 @@ export function TaskBoard({
     next.delete('task');
     setParams(next, { replace: true });
   };
-  const tasks = query.data || [];
-  const tags = [
-    ...new Map(
-      tasks.flatMap((task) => task.tags.tags).map((item) => [item.id, item]),
-    ).values(),
-  ];
-  const visible = tasks
-    .filter(
-      (task) =>
-        (status === 'all' ||
-          (status === 'active'
-            ? !['done', 'archived'].includes(task.status)
-            : task.status === status)) &&
-        task.title.toLowerCase().includes(search.trim().toLowerCase()) &&
-        (!tag || task.tags.tags.some((item) => item.id === tag)),
-    )
-    .sort(
-      (a, b) =>
-        (sort === 'priority'
-          ? a.priority - b.priority
-          : sort === 'title'
-            ? a.title.localeCompare(b.title)
-            : sort === 'status'
-              ? statuses.indexOf(a.status) - statuses.indexOf(b.status)
-              : a.due_at.localeCompare(b.due_at)) ||
-        a.title.localeCompare(b.title) ||
-        a.id.localeCompare(b.id),
-    );
+  const visible = query.data?.tasks || [];
+  const tags = tagQuery.data?.tags || [];
+  const counts = query.data?.counts;
+  const total = query.data?.total || 0;
   useTaskShortcuts({
     enabled: !selected && !manageTags && !help,
     canEdit,
@@ -130,19 +169,20 @@ export function TaskBoard({
     searchRef,
     onCreate: () => open('new'),
     onHelp: () => setHelp(true),
+    onLeaveSearch: leaveSearch,
     onToggle: (id) => {
       const task = visible.find((item) => item.id === id);
       if (task) toggle.mutate(task);
     },
   });
-  const done = tasks.filter((task) => task.status === 'done').length;
   return (
     <section className="task-board" aria-label="Workspace tasks">
       <div className="task-toolbar">
         <div>
           <p className="eyebrow">YOUR NEXT SMALL VICTORY</p>
           <h2>
-            Things to do<span className="task-count">{tasks.length}</span>
+            Things to do
+            <span className="task-count">{counts?.total ?? '—'}</span>
           </h2>
         </div>
         <div className="task-actions">
@@ -170,24 +210,9 @@ export function TaskBoard({
         </div>
       </div>
       <div className="task-summary">
-        <span>
-          {
-            tasks.filter((task) => !['done', 'archived'].includes(task.status))
-              .length
-          }{' '}
-          open
-        </span>
-        <span>{done} done</span>
-        <span>
-          {
-            tasks.filter(
-              (task) =>
-                task.due_at < localToday() &&
-                !['done', 'archived'].includes(task.status),
-            ).length
-          }{' '}
-          overdue
-        </span>
+        <span>{counts?.active ?? '—'} open</span>
+        <span>{counts?.done ?? '—'} done</span>
+        <span>{counts?.archived ?? '—'} archived</span>
       </div>
       <div className="task-filters">
         <label className="field task-search">
@@ -195,15 +220,14 @@ export function TaskBoard({
           <input
             ref={searchRef}
             type="search"
+            maxLength={80}
             placeholder="Find your next thing…"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === 'ArrowDown') {
                 event.preventDefault();
-                listRef.current
-                  ?.querySelector<HTMLButtonElement>('[data-open-task]')
-                  ?.focus();
+                leaveSearch();
               }
             }}
           />
@@ -212,7 +236,10 @@ export function TaskBoard({
           Show
           <select
             value={status}
-            onChange={(event) => setStatus(event.target.value)}
+            onChange={(event) => {
+              setStatus(event.target.value);
+              setOffset(0);
+            }}
           >
             <option value="active">Active</option>
             <option value="all">All tasks</option>
@@ -227,9 +254,12 @@ export function TaskBoard({
           Sort by
           <select
             value={sort}
-            onChange={(event) => setSort(event.target.value)}
+            onChange={(event) => {
+              setSort(event.target.value);
+              setOffset(0);
+            }}
           >
-            <option value="due">Due date</option>
+            <option value="due_at">Due date</option>
             <option value="priority">Priority</option>
             <option value="title">Title</option>
             <option value="status">Status</option>
@@ -237,7 +267,13 @@ export function TaskBoard({
         </label>
         <label className="field">
           Filter tag
-          <select value={tag} onChange={(event) => setTag(event.target.value)}>
+          <select
+            value={tag}
+            onChange={(event) => {
+              setTag(event.target.value);
+              setOffset(0);
+            }}
+          >
             <option value="">All tags</option>
             {tags.map((item) => (
               <option key={item.id} value={item.id}>
@@ -245,6 +281,45 @@ export function TaskBoard({
               </option>
             ))}
           </select>
+        </label>
+      </div>
+      <div className="task-filters">
+        <label className="field">
+          Direction
+          <select
+            value={direction}
+            onChange={(event) => {
+              setDirection(event.target.value);
+              setOffset(0);
+            }}
+          >
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+          </select>
+        </label>
+        <label className="field">
+          Due from
+          <input
+            type="date"
+            value={dueFrom}
+            max={dueTo || undefined}
+            onChange={(event) => {
+              setDueFrom(event.target.value);
+              setOffset(0);
+            }}
+          />
+        </label>
+        <label className="field">
+          Due through
+          <input
+            type="date"
+            value={dueTo}
+            min={dueFrom || undefined}
+            onChange={(event) => {
+              setDueTo(event.target.value);
+              setOffset(0);
+            }}
+          />
         </label>
       </div>
       <FormError message={query.error?.message || toggle.error?.message} />
@@ -257,7 +332,7 @@ export function TaskBoard({
         <p className="task-empty" role="status">
           Gathering your tasks…
         </p>
-      ) : !query.isError && !tasks.length ? (
+      ) : !query.isError && counts?.total === 0 ? (
         <div className="task-empty">
           <PixelComputer large />
           <h3>A clear screen. A fresh start.</h3>
@@ -274,7 +349,9 @@ export function TaskBoard({
       ) : (
         <>
           <p className="task-results" aria-live="polite">
-            {visible.length} of {tasks.length} tasks
+            {visible.length} of {total} tasks
+            {total > 50 &&
+              ` · page ${Math.floor(offset / 50) + 1} of ${Math.ceil(total / 50)}`}
           </p>
           {!visible.length && (
             <div className="task-empty">
@@ -286,6 +363,9 @@ export function TaskBoard({
                   setSearch('');
                   setTag('');
                   setStatus('all');
+                  setDueFrom('');
+                  setDueTo('');
+                  setOffset(0);
                 }}
               >
                 Show all tasks
@@ -322,7 +402,7 @@ export function TaskBoard({
                     <span className="task-status" data-status={task.status}>
                       {statusLabels[task.status]}
                     </span>
-                    <span>P{task.priority}</span>
+                    <span>{priorityLabels[task.priority]}</span>
                     <time
                       className={
                         task.due_at < localToday() &&
@@ -347,6 +427,24 @@ export function TaskBoard({
               </li>
             ))}
           </ul>
+          {total > 50 && (
+            <nav className="task-actions" aria-label="Task pages">
+              <button
+                className="secondary"
+                disabled={offset === 0 || query.isFetching}
+                onClick={() => setOffset((value) => Math.max(0, value - 50))}
+              >
+                Previous page
+              </button>
+              <button
+                className="secondary"
+                disabled={offset + 50 >= total || query.isFetching}
+                onClick={() => setOffset((value) => value + 50)}
+              >
+                Next page
+              </button>
+            </nav>
+          )}
         </>
       )}
       <p className="task-key-hint">

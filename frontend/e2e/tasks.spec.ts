@@ -1,9 +1,6 @@
-import {
-  test,
-  expect,
-  type APIRequestContext,
-  type Page,
-} from '@playwright/test';
+import { test } from './fixtures';
+import { rememberSession, installSession } from './session';
+import { expect, type APIRequestContext, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 async function seed(request: APIRequestContext) {
@@ -20,9 +17,7 @@ async function seed(request: APIRequestContext) {
     data: { email: account.email, password: account.password },
   });
   expect(login.status()).toBe(200);
-  const { access_token: token } = (await login.json()) as {
-    access_token: string;
-  };
+  const token = rememberSession(await login.json());
   const headers = { Authorization: `Bearer ${token}` };
   const { workspaces } = (await (
     await request.get('/api/workspaces', { headers })
@@ -35,10 +30,7 @@ async function open(
   suffix = '',
 ) {
   await page.goto('/login');
-  await page.evaluate(
-    (token) => sessionStorage.setItem('donee-session-token', token),
-    account.token,
-  );
+  await installSession(page, account.token);
   await page.goto(`/workspaces/${account.workspace}${suffix}`);
   await expect(
     page.getByRole('heading', { name: 'Things to do' }),
@@ -55,7 +47,7 @@ async function create(
       workspace_id: account.workspace,
       title,
       description: 'A real persisted description.',
-      priority: 2,
+      priority: 'normal',
       due_at: '2026-10-20',
     },
   });
@@ -99,12 +91,12 @@ test('create, edit, complete, reopen, archive and delete persisted tasks', async
     .selectOption('in_progress');
   await dialog
     .getByRole('combobox', { name: 'Priority', exact: true })
-    .selectOption('1');
+    .selectOption('high');
   await dialog.getByRole('button', { name: 'Save task', exact: true }).click();
   await expect(dialog).not.toBeVisible();
   await page.reload();
   await expect(
-    page.getByRole('button', { name: /Ship a small thing.*In progress.*P1/ }),
+    page.getByRole('button', { name: /Ship a small thing.*In progress.*High/ }),
   ).toBeVisible();
   await page
     .getByRole('button', { name: 'Complete Ship a small thing', exact: true })
@@ -218,6 +210,7 @@ test('keyboard navigation, dirty-close confirmation and failed saves preserve dr
   await create(request, account, 'Alpha task');
   await create(request, account, 'Beta task');
   await open(page, account);
+  await page.getByLabel('Sort by').selectOption('title');
   const first = page.getByRole('button', { name: /Alpha task.*To do/ });
   await first.focus();
   await page.keyboard.press('j');
@@ -259,14 +252,19 @@ test('search includes tasks after first API page and filters reset', async ({
   for (let i = 0; i < 102; i++)
     await create(request, account, `Item ${String(i).padStart(3, '0')}`);
   await open(page, account);
-  await expect(page.getByText('102 of 102 tasks')).toBeVisible();
+  await expect(page.getByText('50 of 102 tasks · page 1 of 3')).toBeVisible();
+  await page.getByRole('button', { name: 'Next page' }).click();
+  await expect(page.getByText('50 of 102 tasks · page 2 of 3')).toBeVisible();
+  await page.getByRole('button', { name: 'Next page' }).click();
+  await expect(page.getByText('2 of 102 tasks · page 3 of 3')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Next page' })).toBeDisabled();
   await page.getByLabel('Search tasks').fill('Item 101');
   await expect(
     page.getByRole('button', { name: /Item 101.*To do/ }),
   ).toBeVisible();
   await page.getByLabel('Search tasks').fill('nothing matches');
   await page.getByRole('button', { name: 'Show all tasks' }).click();
-  await expect(page.getByText('102 of 102 tasks')).toBeVisible();
+  await expect(page.getByText('50 of 102 tasks · page 1 of 3')).toBeVisible();
 });
 
 test('failed loading, invalid links and foreign task IDs do not expose task data', async ({
@@ -446,6 +444,7 @@ test('task shortcuts work on arrival, outside the list, and after leaving search
   await create(request, account, 'Alpha shortcut task');
   await create(request, account, 'Beta shortcut task');
   await open(page, account);
+  await page.getByLabel('Sort by').selectOption('title');
   const alpha = page.getByRole('button', {
     name: /Alpha shortcut task.*To do/,
   });
@@ -513,4 +512,106 @@ test('task shortcuts respect other dialogs, editable fields, modifiers and route
   await page.getByRole('link', { name: '~/spaces', exact: true }).click();
   await page.keyboard.press('a');
   await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+test('server filters keep workspace counts and honor literal search, due ranges and priority order', async ({
+  page,
+  request,
+}) => {
+  const account = await seed(request);
+  const literal = await create(request, account, 'Literal %_ task');
+  const other = await create(request, account, 'Other task');
+  await request.patch(`/api/tasks/${literal.id}`, {
+    headers: account.headers,
+    data: { priority: 'low', due_at: '2026-11-03' },
+  });
+  await request.patch(`/api/tasks/${other.id}`, {
+    headers: account.headers,
+    data: { priority: 'high', due_at: '2026-11-01', status: 'done' },
+  });
+  const queries: URL[] = [];
+  page.on('request', (req) => {
+    const url = new URL(req.url());
+    if (url.pathname === '/api/tasks') queries.push(url);
+  });
+  await open(page, account);
+  await expect(page.getByText('1 open', { exact: true })).toBeVisible();
+  await expect(page.getByText('1 done', { exact: true })).toBeVisible();
+  expect(queries.at(-1)!.searchParams.getAll('statuses')).toEqual([
+    'to do',
+    'in_progress',
+    'blocked',
+  ]);
+  await page
+    .getByRole('combobox', { name: 'Show', exact: true })
+    .selectOption('all');
+  await page.getByLabel('Sort by').selectOption('priority');
+  await expect(page.locator('[data-open-task]').first()).toContainText(
+    'Other task',
+  );
+  await page.getByLabel('Direction').selectOption('desc');
+  await expect(page.locator('[data-open-task]').first()).toContainText(
+    'Literal %_ task',
+  );
+  await page.getByLabel('Search tasks').fill('%_');
+  await expect(page.getByText('1 of 1 tasks', { exact: true })).toBeVisible();
+  await expect(page.getByText('1 done', { exact: true })).toBeVisible();
+  await page.getByLabel('Search tasks').fill('');
+  await page.getByLabel('Due from', { exact: true }).fill('2026-11-02');
+  await page.getByLabel('Due through', { exact: true }).fill('2026-11-03');
+  await expect(page.getByText('1 of 1 tasks', { exact: true })).toBeVisible();
+  await expect(page.locator('[data-open-task]').first()).toContainText(
+    'Literal %_ task',
+  );
+  expect(queries.at(-1)!.searchParams.get('due_to')).toBe('2026-11-03');
+});
+
+test('workspace deletion waits for an in-flight file transfer after navigating away', async ({
+  page,
+  request,
+}) => {
+  const account = await seed(request);
+  await create(request, account, 'Task with a file');
+  await open(page, account);
+  await page.getByRole('link', { name: 'Settings', exact: true }).click();
+  await page.getByRole('link', { name: 'Overview', exact: true }).click();
+  await page.getByRole('button', { name: /Task with a file.*To do/ }).click();
+  let release!: () => void;
+  let uploading = false;
+  await page.route('**/api/__test/storage', async (route) => {
+    uploading = true;
+    await new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await route.continue();
+  });
+  await page.getByLabel('Upload file').setInputFiles({
+    name: 'kept.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('Attachment fixture'),
+  });
+  await expect.poll(() => uploading).toBe(true);
+  // The task dialog has its own history entry; return through overview to settings.
+  await page.goBack();
+  await page.goBack();
+  const remove = page.getByRole('button', {
+    name: 'Delete workspace',
+    exact: true,
+  });
+  await expect(remove).toBeDisabled();
+  release();
+  await expect(remove).toBeEnabled();
+  await remove.click();
+  await page.getByLabel('Type the workspace name to confirm').fill('My Space');
+  await page
+    .getByRole('button', { name: 'Permanently delete workspace', exact: true })
+    .click();
+  await expect(page).toHaveURL('/workspaces');
+  expect(
+    (
+      await request.get(`/api/workspaces/${account.workspace}`, {
+        headers: account.headers,
+      })
+    ).status(),
+  ).toBe(404);
 });

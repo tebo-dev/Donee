@@ -8,7 +8,7 @@ import { useAuth } from './auth-context';
 import { AuthPanel, Field, FormError, Submit } from './FormParts';
 
 export function LoginPage() {
-  const { authenticate } = useAuth();
+  const { authenticate, notice } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const state = location.state as {
@@ -28,7 +28,7 @@ export function LoginPage() {
   async function submit(values: z.infer<typeof loginSchema>) {
     try {
       const result = await api('/auth/login', tokenSchema, { body: values });
-      await authenticate(result.access_token);
+      await authenticate(result);
       navigate('/workspaces', { replace: true });
     } catch (error) {
       setError('root', {
@@ -43,6 +43,11 @@ export function LoginPage() {
       title="Welcome back, human."
       description="Your little corner is right where you left it."
     >
+      {notice && (
+        <p className="form-message" role="status">
+          {notice}
+        </p>
+      )}
       {state?.registered && (
         <p className="form-message" role="status">
           Your account is ready. Sign in to make yourself at home.

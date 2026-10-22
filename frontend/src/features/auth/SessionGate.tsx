@@ -2,7 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from './auth-context';
 
 export function SessionGate({ guest = false }: { guest?: boolean }) {
-  const { session, retry, signOut } = useAuth();
+  const { session, retry, signOut, signingOut } = useAuth();
   const location = useLocation();
   const Container = guest ? 'section' : 'main';
   const contentId = guest ? undefined : 'main-content';
@@ -24,7 +24,13 @@ export function SessionGate({ guest = false }: { guest?: boolean }) {
           <button className="primary" onClick={retry}>
             Try again
           </button>
-          <button className="secondary" onClick={signOut}>
+          <button
+            className="secondary"
+            disabled={signingOut}
+            onClick={() => {
+              void signOut();
+            }}
+          >
             Return to sign in
           </button>
         </div>

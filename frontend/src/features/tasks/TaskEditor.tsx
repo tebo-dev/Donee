@@ -91,7 +91,7 @@ function EditorForm({
     defaultValues: {
       title: task?.title || '',
       description: task?.description || '',
-      priority: task?.priority ?? 2,
+      priority: task?.priority ?? 'normal',
       due_at: task?.due_at || localToday(),
       status: task?.status || 'to do',
       tagIds: task?.tags.tags.map((tag) => tag.id) || [],
@@ -220,14 +220,9 @@ function EditorForm({
                 <label className="field">
                   Priority
                   <select {...form.register('priority')}>
-                    <option value={1}>1 / High</option>
-                    <option value={2}>2 / Normal</option>
-                    <option value={3}>3 / Low</option>
-                    {task && ![1, 2, 3].includes(task.priority) && (
-                      <option value={task.priority}>
-                        {task.priority} / Custom
-                      </option>
-                    )}
+                    <option value="high">High</option>
+                    <option value="normal">Normal</option>
+                    <option value="low">Low</option>
                   </select>
                 </label>
               </div>

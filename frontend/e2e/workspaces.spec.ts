@@ -1,9 +1,6 @@
-import {
-  test,
-  expect,
-  type APIRequestContext,
-  type Page,
-} from '@playwright/test';
+import { test } from './fixtures';
+import { rememberSession, installSession } from './session';
+import { expect, type APIRequestContext, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 type Workspace = { id: string; name: string; created_at: string };
@@ -16,7 +13,7 @@ async function tokenFor(
     data: { email, password },
   });
   expect(response.status()).toBe(200);
-  return ((await response.json()) as { access_token: string }).access_token;
+  return rememberSession(await response.json());
 }
 async function seed(request: APIRequestContext) {
   const suffix = crypto.randomUUID().slice(0, 8);
@@ -37,10 +34,7 @@ async function seed(request: APIRequestContext) {
 }
 async function openSpaces(page: Page, token: string, path = '/workspaces') {
   await page.goto('/login');
-  await page.evaluate(
-    (value) => sessionStorage.setItem('donee-session-token', value),
-    token,
-  );
+  await installSession(page, token);
   await page.goto(path);
 }
 async function create(
@@ -83,9 +77,11 @@ test('default space, creation, rename conflicts, and persistence use the real AP
   await expect(
     page.getByRole('heading', { name: 'Side quests', exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole('status')).toContainText(
-    'Your new workspace is ready.',
-  );
+  await expect(
+    page
+      .getByRole('status')
+      .filter({ hasText: 'Your new workspace is ready.' }),
+  ).toContainText('Your new workspace is ready.');
   const workspaceId = page.url().split('/').at(-1)!;
   await page.getByRole('link', { name: 'Settings', exact: true }).click();
   await page.getByLabel('Workspace name').fill('My Space');
@@ -338,7 +334,7 @@ test('empty responses offer creation and a workspace 401 clears the session', as
   await page.reload();
   await expect(page).toHaveURL('/login');
   expect(
-    await page.evaluate(() => sessionStorage.getItem('donee-session-token')),
+    await page.evaluate(() => sessionStorage.getItem('donee-session')),
   ).toBeNull();
 });
 
@@ -404,4 +400,64 @@ test('workspace pages and dialogs are accessible, responsive, and theme-aware', 
     (await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze())
       .violations,
   ).toEqual([]);
+});
+
+test('workspace deletion requires confirmation and preserves the workspace for retry on cleanup failure', async ({
+  page,
+  request,
+}) => {
+  const account = await seed(request);
+  await openSpaces(
+    page,
+    account.token,
+    `/workspaces/${account.workspace.id}/settings`,
+  );
+  await page
+    .getByRole('button', { name: 'Delete workspace', exact: true })
+    .click();
+  const dialog = page.getByRole('dialog');
+  const remove = dialog.getByRole('button', {
+    name: 'Permanently delete workspace',
+    exact: true,
+  });
+  await expect(remove).toBeDisabled();
+  await dialog
+    .getByLabel('Type the workspace name to confirm')
+    .fill(account.workspace.name);
+  await page.route(`**/api/workspaces/${account.workspace.id}`, (route) =>
+    route.request().method() === 'DELETE'
+      ? route.fulfill({
+          status: 503,
+          json: { detail: 'Workspace file cleanup failed. Retry deletion.' },
+        })
+      : route.continue(),
+  );
+  await remove.click();
+  await expect(dialog.getByRole('alert')).toContainText(
+    'Your workspace is still here',
+  );
+  expect(
+    (
+      await request.get(`/api/workspaces/${account.workspace.id}`, {
+        headers: account.headers,
+      })
+    ).status(),
+  ).toBe(200);
+  await page.unroute(`**/api/workspaces/${account.workspace.id}`);
+  await remove.click();
+  await expect(page).toHaveURL('/workspaces');
+  await expect(
+    page.getByRole('link', { name: 'Open My Space', exact: true }),
+  ).toHaveCount(0);
+  expect(
+    (
+      await request.get(`/api/workspaces/${account.workspace.id}`, {
+        headers: account.headers,
+      })
+    ).status(),
+  ).toBe(404);
+  await page.reload();
+  await expect(
+    page.getByRole('link', { name: 'Open My Space', exact: true }),
+  ).toHaveCount(0);
 });

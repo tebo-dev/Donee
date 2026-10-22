@@ -1,6 +1,6 @@
 # Donee frontend
 
-Donee's React, TypeScript, and Vite frontend. Includes registration, sign-in, password recovery, account details, workspace browsing, creation, and renaming, and individual task workflows. Appearance settings offer Matrix, Terminal, Dracula, and Akira themes, plus IBM Plex Mono and Fira Code for inputs and small details.
+Donee's React, TypeScript, and Vite frontend. Includes registration, sign-in, password recovery, account details, workspace browsing, creation, renaming, and deletion, and individual task workflows. Appearance settings offer Matrix, Terminal, Dracula, and Akira themes, plus IBM Plex Mono and Fira Code for inputs and small details.
 
 ## Development
 
@@ -17,17 +17,19 @@ Start the FastAPI backend separately with its database and mail provider configu
 
 Use `/login` or `/register` to get started. Password recovery begins at `/forgot-password` and uses the six-digit code delivered by the backend's email service. In development, the backend sends email to its configured development recipient. Recovery details stay in memory; keep the tab open until the reset is complete. `/account` requires a server-verified session.
 
-Sign-in opens `/workspaces`. Search the list, create a space, or open one at `/workspaces/:id`. Owners can rename a workspace in `/workspaces/:id/settings`; changes are saved through the API. On the list, focus a workspace row and use `j`/`k`, arrow keys, Home/End, and Enter to navigate. Arrow Down moves from the search field to the first result. Escape closes the creation dialog when a save is not in progress.
+Sign-in opens `/workspaces`. Search the list, create a space, or open one at `/workspaces/:id`. Owners can rename or permanently delete a workspace in `/workspaces/:id/settings`; changes are saved through the API. On the list, focus a workspace row and use `j`/`k`, arrow keys, Home/End, and Enter to navigate. Arrow Down moves from the search field to the first result. Escape closes the creation dialog when a save is not in progress.
 
-The current backend lists only owned workspaces. Accessible shared spaces can be opened by direct link, with read-only settings when ownership cannot be confirmed. Workspace deletion, invitations, and membership management have no API endpoints and are not offered. Task tools use persisted API data. Collaboration controls are deferred.
+The current backend lists only owned workspaces. Accessible shared spaces can be opened by direct link, with read-only settings when ownership cannot be confirmed. Invitations and membership management remain deferred. Deletion requires the workspace name as confirmation, waits for active attachment work, and offers retry if file cleanup fails. Task tools use persisted API data. Collaboration controls are deferred.
 
-The access token is stored in this tab's session storage and verified through `/auth/me` after a reload, on window focus, and periodically. It expires according to the backend's token lifetime. Sign-out clears this tab's token and cached data. The current backend provides no refresh-token or logout/revocation endpoint; password reset invalidates older tokens. No persistent “remember me” option is provided.
+The access/refresh pair is stored together in this tab's session storage, with the lifetimes supplied by the server. Protected requests renew it before expiry or retry once after an unauthorized response; simultaneous requests share one rotation. A browser lock prevents duplicated tabs from sharing the same refresh credential. If locks or storage are unavailable, login stays in memory and a reload requires signing in again. Old access-only sessions are cleared. An uncertain refresh response ends the local session rather than replaying a potentially consumed credential. Sign-out calls the backend before clearing local credentials and caches; if the server cannot be reached, the UI reports that revocation could not be confirmed. Passwords and confirmations preserve every character, including surrounding spaces.
+
+This frontend requires the updated backend schema, including string priorities and session tables. Apply the backend's pending migration as part of deployment before starting the updated application against an existing database. The frontend tests create a separate temporary schema; they do not migrate the developer database.
 
 ## Tasks
 
-Open a workspace to search, filter by status/tag, and sort tasks by date, priority, title, or status. Search covers all task pages returned by the API and matches titles. Active tasks are shown by default; choose All tasks, Done, or Archived to see the others. A task can be reopened, archived, or permanently deleted with confirmation. Task links use `/workspaces/:id?task=:taskId`.
+Open a workspace to search, filter by status/tag, and sort tasks by date, priority, title, or status. Search, status/tag filters, inclusive due-date ranges, and ascending/descending sorts run on the server. Search is debounced and obsolete requests are cancelled. Results load 50 at a time; page controls use the filtered total, while summary counts describe the entire workspace. Changing filters resets pagination. Active tasks are shown by default; choose All tasks, Done, or Archived to see the others. A task can be reopened, archived, or permanently deleted with confirmation. Task links use `/workspaces/:id?task=:taskId`.
 
-The editor supports title (2–80 characters), description (up to 10,000), a required due date, priority, and workspace tags. New tasks begin in To do. Priority defaults to 2 / Normal; the UI offers 1 / High and 3 / Low and preserves existing custom integer values. Dates remain calendar dates without timezone shifts. Only changed fields are patched, preserving completion dates when editing other details. Failed saves preserve the draft; closing a dirty form asks before discarding it.
+The editor supports title (2–80 characters), description (up to 10,000), a required due date, priority, and workspace tags. New tasks begin in To do. Priority defaults to Normal; requests use the strings `high`, `normal`, and `low`. Dates remain calendar dates without timezone shifts. Only changed fields are patched, preserving completion dates when editing other details. Failed saves preserve the draft; closing a dirty form asks before discarding it.
 
 Manage tags from the task toolbar. Tags can be created, renamed, recolored, assigned, unassigned, and deleted. Deleting a tag removes its task assignments. Names and colors must be unique within the workspace according to the API.
 

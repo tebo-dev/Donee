@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { User } from './contracts';
+import type { User, TokenPair } from './contracts';
 import type { ZodType } from 'zod';
 import type { ApiOptions } from '../../lib/api';
 
@@ -9,8 +9,10 @@ export type Session = {
 };
 export const AuthContext = createContext<{
   session: Session;
-  authenticate: (token: string) => Promise<void>;
-  signOut: () => void;
+  authenticate: (token: TokenPair) => Promise<void>;
+  signOut: () => Promise<void>;
+  notice: string;
+  signingOut: boolean;
   retry: () => void;
   request: <T>(
     path: string,

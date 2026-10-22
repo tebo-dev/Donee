@@ -5,20 +5,20 @@ describe('task contracts', () => {
   const value = {
     title: '  A small thing  ',
     description: ' ',
-    priority: 2,
+    priority: 'normal',
     due_at: '2026-10-19',
     status: 'to do',
     tagIds: [],
   };
-  it('trims titles and descriptions, requires a real date, bounds database integers', () => {
+  it('trims titles and descriptions, requires a real date, rejects non-enum priorities', () => {
     expect(taskFormSchema.parse(value).title).toBe('A small thing');
     expect(taskFormSchema.parse(value).description).toBe('');
     expect(
       taskFormSchema.safeParse({ ...value, due_at: '2026-02-30' }).success,
     ).toBe(false);
-    expect(
-      taskFormSchema.safeParse({ ...value, priority: 32768 }).success,
-    ).toBe(false);
+    expect(taskFormSchema.safeParse({ ...value, priority: 2 }).success).toBe(
+      false,
+    );
     expect(taskFormSchema.safeParse({ ...value, title: 'x' }).success).toBe(
       false,
     );

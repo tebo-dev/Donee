@@ -1,12 +1,8 @@
-import {
-  test,
-  expect,
-  type Page,
-  type APIRequestContext,
-} from '@playwright/test';
+import { test } from './fixtures';
+import { expect, type Page, type APIRequestContext } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-const password = 'a-little-room-123';
+const password = '  a-little-room-123  ';
 function identity() {
   const id = crypto.randomUUID().slice(0, 8);
   return {
@@ -108,7 +104,7 @@ test('password recovery verifies the code, changes the password, and invalidates
   ).toEqual([]);
   await page
     .getByLabel('New password', { exact: true })
-    .fill('a-new-little-key-456');
+    .fill('  a-new-little-key-456  ');
   await page
     .getByLabel('Confirm password', { exact: true })
     .fill('does-not-match');
@@ -116,7 +112,7 @@ test('password recovery verifies the code, changes the password, and invalidates
   await expect(page.getByText('Those passwords do not match.')).toBeVisible();
   await page
     .getByLabel('Confirm password', { exact: true })
-    .fill('a-new-little-key-456');
+    .fill('  a-new-little-key-456  ');
   await page.getByRole('button', { name: 'Save my new password' }).click();
   await expect(page).toHaveURL('/account');
   await expect(page.getByRole('status')).toContainText(
@@ -132,7 +128,7 @@ test('password recovery verifies the code, changes the password, and invalidates
   await page.getByRole('button', { name: 'Sign out of this tab' }).click();
   await signIn(page, user.email);
   await expect(page.getByRole('alert')).toHaveText('Invalid credentials.');
-  await signIn(page, user.email, 'a-new-little-key-456');
+  await signIn(page, user.email, '  a-new-little-key-456  ');
   await expect(page).toHaveURL('/workspaces');
 });
 
@@ -310,4 +306,93 @@ test('appearance persists, password visibility is accessible, and all auth pages
       fullPage: true,
     });
   }
+});
+
+test('refresh rotates the persisted pair and sign-out revokes it on the server', async ({
+  page,
+  request,
+}) => {
+  const user = await seed(request);
+  await page.goto('/login');
+  await signIn(page, user.email);
+  await expect(page).toHaveURL('/workspaces');
+  const before = await page.evaluate(() =>
+    JSON.parse(sessionStorage.getItem('donee-session')!),
+  );
+  let refreshes = 0;
+  page.on('request', (req) => {
+    if (req.url().endsWith('/auth/refresh')) refreshes++;
+  });
+  await page.evaluate(() => {
+    const stored = JSON.parse(sessionStorage.getItem('donee-session')!);
+    stored.accessExpiresAt = 0;
+    sessionStorage.setItem('donee-session', JSON.stringify(stored));
+  });
+  await page.reload();
+  await expect(
+    page.getByRole('link', { name: 'Open My Space', exact: true }),
+  ).toBeVisible();
+  const after = await page.evaluate(() =>
+    JSON.parse(sessionStorage.getItem('donee-session')!),
+  );
+  expect(refreshes).toBe(1);
+  expect(after.refresh_token).not.toBe(before.refresh_token);
+  await page.reload();
+  await page.getByRole('button', { name: 'Sign out of this tab' }).click();
+  await expect(page).toHaveURL('/login');
+  expect(
+    await page.evaluate(() => sessionStorage.getItem('donee-session')),
+  ).toBeNull();
+  expect(
+    (
+      await request.get('/api/auth/me', {
+        headers: { Authorization: `Bearer ${after.access_token}` },
+      })
+    ).status(),
+  ).toBe(401);
+  expect(
+    (
+      await request.post('/api/auth/refresh', {
+        data: { refresh_token: after.refresh_token },
+      })
+    ).status(),
+  ).toBe(401);
+});
+
+test('copied tabs cannot replay a shared login, and failed logout reports local-only sign-out', async ({
+  page,
+  context,
+  request,
+}) => {
+  const user = await seed(request);
+  await page.goto('/login');
+  await signIn(page, user.email);
+  await expect(page).toHaveURL('/workspaces');
+  const stored = await page.evaluate(() =>
+    sessionStorage.getItem('donee-session'),
+  );
+  const copy = await context.newPage();
+  await copy.goto('/login');
+  await copy.evaluate(
+    (value) => sessionStorage.setItem('donee-session', value!),
+    stored,
+  );
+  await copy.goto('/workspaces');
+  await expect(copy).toHaveURL('/login');
+  await expect(copy.getByRole('status')).toContainText(
+    'already open in another tab',
+  );
+  expect(
+    await copy.evaluate(() => sessionStorage.getItem('donee-session')),
+  ).toBeNull();
+  await copy.close();
+  await page.route('**/api/auth/logout', (route) => route.abort());
+  await page.getByRole('button', { name: 'Sign out of this tab' }).click();
+  await expect(page).toHaveURL('/login');
+  await expect(page.getByRole('status')).toContainText(
+    'Server sign-out could not be confirmed',
+  );
+  expect(
+    await page.evaluate(() => sessionStorage.getItem('donee-session')),
+  ).toBeNull();
 });

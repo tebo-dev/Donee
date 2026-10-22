@@ -1,5 +1,17 @@
 import { z } from 'zod';
 
+export const priorities = ['high', 'normal', 'low'] as const;
+export const priorityLabels = { high: 'High', normal: 'Normal', low: 'Low' };
+export const countsSchema = z.object({
+  total: z.number(),
+  active: z.number(),
+  to_do: z.number(),
+  in_progress: z.number(),
+  blocked: z.number(),
+  done: z.number(),
+  archived: z.number(),
+});
+
 export const statuses = [
   'to do',
   'in_progress',
@@ -31,7 +43,7 @@ export const previewSchema = z.object({
   workspace_id: z.string().uuid(),
   title: z.string(),
   status: z.enum(statuses),
-  priority: z.number().int(),
+  priority: z.enum(priorities),
   due_at: z.string(),
   tags: tagsSchema,
 });
@@ -44,13 +56,14 @@ export const taskSchema = previewSchema.extend({
 export const tasksSchema = z.object({
   tasks: z.array(previewSchema),
   total: z.number().int().nonnegative(),
+  counts: countsSchema,
 });
 export type Task = z.infer<typeof taskSchema>;
 export type TaskPreview = z.infer<typeof previewSchema>;
 export const taskFormSchema = z.object({
   title: z.string().trim().min(2, 'Use at least 2 characters.').max(80),
   description: z.string().trim().max(10000),
-  priority: z.coerce.number().int().min(-32768).max(32767),
+  priority: z.enum(priorities),
   due_at: z.string().date('Choose a valid due date.'),
   status: z.enum(statuses),
   tagIds: z.array(z.string().uuid()).max(50, 'Choose up to 50 tags.'),

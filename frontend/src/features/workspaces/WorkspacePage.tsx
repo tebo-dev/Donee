@@ -6,6 +6,7 @@ import { GearSix } from '@phosphor-icons/react/dist/csr/GearSix';
 import { useWorkspace, useWorkspaces } from './queries';
 import { createdDate } from './contracts';
 import { WorkspaceError } from './WorkspaceError';
+import { DeleteWorkspace } from './DeleteWorkspace';
 import { RenameWorkspace } from './RenameWorkspace';
 import { TaskBoard } from '../tasks/TaskBoard';
 
@@ -102,7 +103,10 @@ export function WorkspacePage({ settings = false }: { settings?: boolean }) {
           </div>
           <div className="settings-form-panel">
             {canRename ? (
-              <RenameWorkspace key={workspace.id} workspace={workspace} />
+              <>
+                <RenameWorkspace key={workspace.id} workspace={workspace} />
+                <DeleteWorkspace id={workspace.id} name={workspace.name} />
+              </>
             ) : owned.isPending ? (
               <p role="status">Checking edit access…</p>
             ) : owned.isError ? (
