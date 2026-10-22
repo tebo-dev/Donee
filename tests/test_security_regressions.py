@@ -62,7 +62,7 @@ def task(client, headers, workspace):
         json={
             "title": "Test task",
             "description": "safe",
-            "priority": 1,
+            "priority": "high",
             "due_at": "2026-12-01",
             "workspace_id": workspace["id"],
         },
@@ -604,7 +604,7 @@ def test_task_quota_prevents_additional_creation(client, db_session):
                 created_by=UUID(user["id"]),
                 title=f"Task {number}",
                 description="test",
-                priority=1,
+                priority="high",
                 due_at=date.today(),
             )
             for number in range(1000)
@@ -617,7 +617,7 @@ def test_task_quota_prevents_additional_creation(client, db_session):
         json={
             "title": "Over quota",
             "description": "test",
-            "priority": 1,
+            "priority": "high",
             "due_at": "2026-12-01",
             "workspace_id": ws["id"],
         },

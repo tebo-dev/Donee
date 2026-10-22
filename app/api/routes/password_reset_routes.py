@@ -1,6 +1,6 @@
 """Import necessary libraries for endpoints creation."""
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.orm import Session
 
 from app.core.rate_limit import enforce_auth_limit
@@ -44,9 +44,13 @@ def verify_reset_code(
 
 @router.post("/reset-password", response_model=Token)
 def reset_password(
-    payload: ResetPasswordRequest, request: Request, db: Session = Depends(get_db)
+    payload: ResetPasswordRequest,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
 ):
     """Reset user password."""
 
+    response.headers["Cache-Control"] = "no-store"
     enforce_auth_limit(db, request, "recovery-reset", str(payload.email))
     return reset_password_service(db, payload)

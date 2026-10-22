@@ -48,7 +48,7 @@ def _create_user_and_task(client, db_session, *, email=None, username=None):
         json={
             "title": "Attachment task",
             "description": "Attachment tests",
-            "priority": 3,
+            "priority": "low",
             "due_at": "2026-05-01",
             "tags": {"add_tag_ids": [], "remove_tag_ids": []},
             "workspace_id": workspace["id"],

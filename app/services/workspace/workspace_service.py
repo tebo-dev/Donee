@@ -2,7 +2,9 @@
 
 from uuid import UUID
 
-from sqlalchemy import exists, select
+from botocore.exceptions import BotoCoreError, ClientError
+from fastapi import HTTPException
+from sqlalchemy import exists, select, update
 from sqlalchemy.orm import Session
 
 from app.core.domain_errors.workspace_domain_errors import (
@@ -11,6 +13,10 @@ from app.core.domain_errors.workspace_domain_errors import (
     WorkspaceNotFound,
 )
 from app.core.resource_limits import enforce_quota
+from app.core.s3_client import delete_s3_object
+from app.models.auth.user import User
+from app.models.task.attachment import Attachment
+from app.models.task.task import Task
 from app.models.workspace.workspace import Workspace
 from app.models.workspace.workspace_member import WorkspaceMember
 from app.schemas.workspace.workspace import (
@@ -150,4 +156,32 @@ def rename_workspace(
     for field, value in updated_data.items():
         setattr(workspace, field, value)
 
+    db.commit()
+
+
+def delete_workspace(db: Session, workspace_id: UUID, user_id: UUID) -> None:
+    """Remove stored files before deleting records; retry on S3 failure."""
+    # Serialize against task/attachment creation, which also locks the owner row.
+    db.execute(
+        update(User).where(User.id == user_id).values(token_version=User.token_version)
+    )
+    workspace = db.get(Workspace, workspace_id)
+    if not workspace:
+        raise WorkspaceNotFound()
+    if workspace.owner_id != user_id:
+        raise NotAuthorized()
+    keys = db.scalars(
+        select(Attachment.storage_key)
+        .join(Task)
+        .where(Task.workspace_id == workspace_id, Attachment.storage_key.is_not(None))
+    ).all()
+    try:
+        for key in keys:
+            delete_s3_object(key)
+    except (BotoCoreError, ClientError):
+        db.rollback()
+        raise HTTPException(
+            503, "Workspace file cleanup failed. Retry deletion."
+        ) from None
+    db.delete(workspace)
     db.commit()

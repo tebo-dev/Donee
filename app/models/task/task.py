@@ -12,7 +12,6 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
-    SmallInteger,
     String,
     Text,
     func,
@@ -60,8 +59,9 @@ class Task(Base):
         server_default="to do",
     )
 
-    priority: Mapped[int] = mapped_column(
-        SmallInteger(),
+    priority: Mapped[str] = mapped_column(
+        String(6),
+        nullable=False,
     )
 
     assignee_id: Mapped[UUID] = mapped_column(
@@ -125,6 +125,9 @@ class Task(Base):
     )
 
     __table_args__ = (
+        CheckConstraint(
+            "priority IN ('high', 'normal', 'low')", name="tasks_priority_check"
+        ),
         Index("idx_tasks_assignee_id_status", "assignee_id", "status"),
         Index("idx_tasks_project_id_status", "project_id", "status"),
         CheckConstraint(

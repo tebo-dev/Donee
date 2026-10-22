@@ -8,11 +8,11 @@ from app.core.domain_errors.auth_domain_errors import (
     InvalidCredentials,
     UsernameTaken,
 )
-from app.core.jwt_handler import create_access_token
 from app.core.security import hash_password, verify_password
 from app.models.auth.user import User
 from app.schemas.auth.user import Token, UserCreate
 from app.services.auth.email_service import send_email
+from app.services.auth.session_service import create_session, lock_user
 from app.services.workspace.workspace_service import create_default_workspace_for_user
 
 # Helpers
@@ -91,6 +91,14 @@ def login_user(db: Session, email: str, password: str) -> Token:
     if not user:
         raise InvalidCredentials()
 
-    token = create_access_token({"sub": str(user.id), "ver": user.token_version})
-
-    return Token(access_token=token)
+    # Lock and recheck the password in case a reset completed during hashing.
+    user = lock_user(db, user.id)
+    if (
+        not user
+        or not user.is_active
+        or not verify_password(password, user.password_hash)
+    ):
+        raise InvalidCredentials()
+    pair = create_session(db, user)
+    db.commit()
+    return pair

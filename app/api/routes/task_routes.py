@@ -1,20 +1,27 @@
 """Import necessary libraries for endpoints creation."""
 
+from datetime import date
+from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
 from app.db.session import get_db
 from app.models.auth.user import User
-from app.schemas.task.task import TaskCreate, TaskListOut, TaskOut, TaskUpdate
+from app.schemas.task.task import (
+    TaskCreate,
+    TaskListOut,
+    TaskOut,
+    TaskStatus,
+    TaskUpdate,
+)
 from app.services.task.task_service import (
     create_task,
     delete_task,
     get_task_for_user,
     get_workspace_tasks,
-    order_tasks,
     update_task,
 )
 
@@ -36,17 +43,37 @@ def add_new_task(
 @router.get("/tasks", response_model=TaskListOut)
 def return_tasks(
     workspace_id: UUID,
-    order_by: str = None,
+    order_by: (
+        Literal["title", "due_at", "priority", "status", "created_at", "id"] | None
+    ) = None,
+    direction: Literal["asc", "desc"] = "asc",
+    search: str | None = Query(default=None, max_length=80),
+    statuses: list[TaskStatus] | None = Query(default=None, max_length=5),
+    tag_ids: list[UUID] | None = Query(default=None, max_length=50),
+    due_from: date | None = None,
+    due_to: date | None = None,
     limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    """Return all the tasks from a workspace."""
-
-    if order_by:
-        return order_tasks(db, user.id, workspace_id, order_by, limit, offset)
-    return get_workspace_tasks(db, user.id, workspace_id, limit, offset)
+    """Return filtered tasks with filtered total and workspace-wide counts."""
+    if due_from and due_to and due_from > due_to:
+        raise HTTPException(422, "due_from must not be after due_to")
+    return get_workspace_tasks(
+        db,
+        user.id,
+        workspace_id,
+        limit,
+        offset,
+        search=search,
+        statuses=statuses,
+        tag_ids=tag_ids,
+        due_from=due_from,
+        due_to=due_to,
+        order_by=order_by,
+        direction=direction,
+    )
 
 
 @router.get("/tasks/{task_id}", response_model=TaskOut)

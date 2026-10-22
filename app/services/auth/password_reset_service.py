@@ -7,9 +7,9 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
 from app.core.domain_errors.auth_domain_errors import InvalidCode
-from app.core.jwt_handler import create_access_token
 from app.core.security import hash_password, hash_reset_code, verify_reset_code
 from app.models.auth.password_reset import PasswordResetToken
+from app.models.auth.session import AuthSession
 from app.models.auth.user import User
 from app.schemas.auth.password_reset import (
     ForgotPasswordRequest,
@@ -18,6 +18,7 @@ from app.schemas.auth.password_reset import (
 )
 from app.schemas.auth.user import Token
 from app.services.auth.email_service import send_email
+from app.services.auth.session_service import create_session
 from app.utils.codes import gen_random_code
 from app.utils.dates import normalize_utc
 
@@ -127,10 +128,11 @@ def reset_password_service(db: Session, payload: ResetPasswordRequest) -> Token:
     user.token_version += 1
 
     invalidate_reset_tokens_for_user(db, user.id)
-    db.commit()
-
-    return Token(
-        access_token=create_access_token(
-            {"sub": str(user.id), "ver": user.token_version}
-        )
+    db.execute(
+        update(AuthSession)
+        .where(AuthSession.user_id == user.id)
+        .values(revoked_at=datetime.now(timezone.utc))
     )
+    pair = create_session(db, user)
+    db.commit()
+    return pair

@@ -18,7 +18,7 @@ def test_create_task(client):
     payload = {
         "title": "My Task",
         "description": "Test description",
-        "priority": 3,
+        "priority": "low",
         "due_at": "2026-05-01",
         "workspace_id": ws["id"],
     }
@@ -29,7 +29,7 @@ def test_create_task(client):
     assert res.status_code == 201
     assert data["title"] == "My Task"
     assert data["workspace_id"] == ws["id"]
-    assert data["priority"] == 3
+    assert data["priority"] == "low"
 
 
 def test_cannot_create_task_in_foreign_workspace(client):
@@ -52,7 +52,7 @@ def test_cannot_create_task_in_foreign_workspace(client):
     payload = {
         "title": "Illegal Task",
         "description": "Should fail",
-        "priority": 1,
+        "priority": "high",
         "due_at": "2026-05-01",
         "workspace_id": ws_a["id"],
     }
@@ -80,7 +80,7 @@ def test_list_tasks_only_from_workspace(client):
             json={
                 "title": f"A Task {i}",
                 "description": "desc",
-                "priority": 2,
+                "priority": "normal",
                 "due_at": "2026-05-01",
                 "workspace_id": ws_a["id"],
             },
@@ -101,7 +101,7 @@ def test_list_tasks_only_from_workspace(client):
         json={
             "title": "B Task",
             "description": "desc",
-            "priority": 1,
+            "priority": "high",
             "due_at": "2026-05-01",
             "workspace_id": ws_b["id"],
         },
@@ -132,7 +132,7 @@ def test_update_task(client):
         json={
             "title": "Old Title",
             "description": "desc",
-            "priority": 3,
+            "priority": "low",
             "due_at": "2026-05-01",
             "workspace_id": ws["id"],
         },
@@ -145,7 +145,7 @@ def test_update_task(client):
         "title": "New Title",
         "description": "Updated desc",
         "status": "in_progress",
-        "priority": 1,
+        "priority": "high",
         "due_at": "2026-06-01",
     }
 
@@ -153,7 +153,7 @@ def test_update_task(client):
     updated = res2.json()
 
     assert updated["title"] == "New Title"
-    assert updated["priority"] == 1
+    assert updated["priority"] == "high"
     assert updated["status"] == "in_progress"
 
 
@@ -173,7 +173,7 @@ def test_delete_task(client):
         json={
             "title": "Task to delete",
             "description": "desc",
-            "priority": 3,
+            "priority": "low",
             "due_at": "2026-05-01",
             "workspace_id": ws["id"],
         },
@@ -208,7 +208,7 @@ def test_order_tasks_by_status(client):
             json={
                 "title": f"Task {i}",
                 "description": "desc",
-                "priority": 3,
+                "priority": "low",
                 "due_at": "2026-05-01",
                 "workspace_id": ws["id"],
             },
@@ -226,7 +226,7 @@ def test_order_tasks_by_status(client):
                 "title": "Updated",
                 "description": "desc",
                 "status": status,
-                "priority": 3,
+                "priority": "low",
                 "due_at": "2026-05-01",
             },
             headers=headers,

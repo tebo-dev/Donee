@@ -51,7 +51,8 @@ class Settings(BaseSettings):
     # Authentication / JWT
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str = Field(default="HS256")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=60)
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=15, ge=1)
+    REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default=30, ge=1)
 
     # AWS / S3
 

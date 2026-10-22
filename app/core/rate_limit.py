@@ -21,7 +21,11 @@ def enforce_auth_limit(db: Session, request: Request, action: str, email: str) -
     window = 15 * 60
     expires = (now // window + 1) * window
     ip = request.client.host if request.client else "unknown"
-    identities = [("account", email.casefold(), 3), ("source", ip, 30)]
+    account_limit, source_limit = (60, 120) if action == "refresh" else (3, 30)
+    identities = [
+        ("account", email.casefold(), account_limit),
+        ("source", ip, source_limit),
+    ]
 
     if db.bind.dialect.name == "postgresql":
         insert = pg_insert

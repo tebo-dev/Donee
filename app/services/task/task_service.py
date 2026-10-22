@@ -29,6 +29,7 @@ from app.models.workspace.workspace import Workspace
 from app.models.workspace.workspace_member import WorkspaceMember
 from app.schemas.tag.tag import TagListOut
 from app.schemas.task.task import (
+    TaskCounts,
     TaskCreate,
     TaskListOut,
     TaskOut,
@@ -176,36 +177,115 @@ def create_task(db: Session, user_id: UUID, task_data: TaskCreate) -> TaskOut:
 
 
 def get_workspace_tasks(
-    db: Session, user_id: UUID, workspace_id: UUID, limit: int = 50, offset: int = 0
+    db: Session,
+    user_id: UUID,
+    workspace_id: UUID,
+    limit: int = 50,
+    offset: int = 0,
+    *,
+    search: str | None = None,
+    statuses: list[str] | None = None,
+    tag_ids: list[UUID] | None = None,
+    due_from: date | None = None,
+    due_to: date | None = None,
+    order_by: str | None = None,
+    direction: str = "asc",
 ) -> TaskListOut:
-    """Return all the tasks from a workspace."""
-
-    curr_member = get_member(db, user_id, workspace_id)
-
-    if not curr_member:
+    """Filter and count before pagination; UUID is the stable sort tie breaker."""
+    if not get_member(db, user_id, workspace_id):
         raise NotAuthorized()
-
-    stmt = (
+    predicates = [Task.workspace_id == workspace_id]
+    if search:
+        predicates.append(Task.title.icontains(search, autoescape=True))
+    if statuses:
+        predicates.append(Task.status.in_(statuses))
+    if tag_ids:
+        # Match every requested tag; EXISTS avoids duplicate rows and counts.
+        for tag_id in set(tag_ids):
+            predicates.append(
+                select(TaskTag.task_id)
+                .where(
+                    TaskTag.task_id == Task.id,
+                    TaskTag.tag_id == tag_id,
+                )
+                .exists()
+            )
+    if due_from:
+        predicates.append(Task.due_at >= due_from)
+    if due_to:
+        predicates.append(Task.due_at <= due_to)
+    sorts = {
+        "title": func.lower(Task.title),
+        "due_at": Task.due_at,
+        "priority": case(
+            (Task.priority == "high", 1), (Task.priority == "normal", 2), else_=3
+        ),
+        "status": case(
+            (Task.status == "to do", 1),
+            (Task.status == "in_progress", 2),
+            (Task.status == "done", 3),
+            (Task.status == "blocked", 4),
+            else_=5,
+        ),
+        "created_at": Task.created_at,
+        "id": Task.id,
+    }
+    if order_by is not None and order_by not in sorts:
+        raise InvalidOrderParameter()
+    sort = sorts[order_by or "id"]
+    sort = sort.desc() if direction == "desc" else sort.asc()
+    tasks = db.scalars(
         select(Task)
-        .where(Task.workspace_id == workspace_id)
-        .order_by(Task.id)
+        .where(*predicates)
+        .order_by(sort, Task.id.asc())
         .limit(limit)
         .offset(offset)
-    )
-    workspace_tasks = db.execute(stmt).scalars().all()
-    task_schemas = []
-
-    for task in workspace_tasks:
-        task_schema = TaskPreview.model_validate(task)
-        task_schema.tags = get_task_tags(db, task.id, user_id)
-        task_schemas.append(task_schema)
-
+    ).all()
+    tags_by_task = {task.id: [] for task in tasks}
+    if tasks:
+        rows = db.execute(
+            select(TaskTag.task_id, Tag)
+            .join(Tag, TaskTag.tag_id == Tag.id)
+            .where(TaskTag.task_id.in_(tags_by_task), Tag.workspace_id == workspace_id)
+            .order_by(Tag.id)
+        ).all()
+        for task_id, tag in rows:
+            tags_by_task[task_id].append(tag)
+    previews = []
+    for task in tasks:
+        preview = TaskPreview.model_validate(task)
+        tags = tags_by_task[task.id]
+        preview.tags = TagListOut(tags=tags, total=len(tags))
+        previews.append(preview)
     return TaskListOut(
-        tasks=task_schemas,
-        total=db.scalar(
-            select(func.count())
-            .select_from(Task)
+        tasks=previews,
+        total=db.scalar(select(func.count()).select_from(Task).where(*predicates)),
+        counts=get_workspace_task_counts(db, user_id, workspace_id),
+    )
+
+
+def get_workspace_task_counts(
+    db: Session, user_id: UUID, workspace_id: UUID
+) -> TaskCounts:
+    """Return complete workspace counts without downloading tasks."""
+    if not get_member(db, user_id, workspace_id):
+        raise NotAuthorized()
+    counts = dict(
+        db.execute(
+            select(Task.status, func.count())
             .where(Task.workspace_id == workspace_id)
+            .group_by(Task.status)
+        ).all()
+    )
+    return TaskCounts(
+        total=sum(counts.values()),
+        to_do=counts.get("to do", 0),
+        in_progress=counts.get("in_progress", 0),
+        blocked=counts.get("blocked", 0),
+        done=counts.get("done", 0),
+        archived=counts.get("archived", 0),
+        active=sum(
+            counts.get(status, 0) for status in ("to do", "in_progress", "blocked")
         ),
     )
 
@@ -309,44 +389,7 @@ def order_tasks(
     limit: int = 50,
     offset: int = 0,
 ) -> TaskListOut:
-    """Order task by different parameters."""
-
-    curr_member = get_member(db, user_id, workspace_id)
-
-    if not curr_member:
-        raise NotAuthorized()
-
-    stmt = select(Task).where(Task.workspace_id == workspace_id)
-
-    if order_by == "status":
-        status_order = case(
-            (Task.status == "to do", 1),
-            (Task.status == "in_progress", 2),
-            (Task.status == "done", 3),
-            (Task.status == "blocked", 4),
-            (Task.status == "archived", 5),
-        )
-        stmt = stmt.order_by(status_order)
-
-    elif order_by == "priority":
-        stmt = stmt.order_by(Task.priority.asc())
-
-    else:
-        raise InvalidOrderParameter()
-
-    tasks = (
-        db.execute(stmt.order_by(Task.id).limit(limit).offset(offset)).scalars().all()
-    )
-    previews = []
-    for task in tasks:
-        preview = TaskPreview.model_validate(task)
-        preview.tags = get_task_tags(db, task.id, user_id)
-        previews.append(preview)
-    return TaskListOut(
-        tasks=previews,
-        total=db.scalar(
-            select(func.count())
-            .select_from(Task)
-            .where(Task.workspace_id == workspace_id)
-        ),
+    """Compatibility wrapper using the common query implementation."""
+    return get_workspace_tasks(
+        db, user_id, workspace_id, limit, offset, order_by=order_by
     )

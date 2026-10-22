@@ -8,14 +8,17 @@ from sqlalchemy.orm import Session
 from app.api.dependencies import get_current_user
 from app.db.session import get_db
 from app.models.auth.user import User
+from app.schemas.task.task import TaskCounts
 from app.schemas.workspace.workspace import (
     WorkspaceCreation,
     WorkspaceListOut,
     WorkspaceOut,
     WorkspaceUpdate,
 )
+from app.services.task.task_service import get_workspace_task_counts
 from app.services.workspace.workspace_service import (
     create_workspace,
+    delete_workspace,
     get_user_workspaces,
     get_workspace_for_user,
     rename_workspace,
@@ -71,3 +74,24 @@ def edit_workspace_name(
 
     rename_workspace(db, workspace_id, user.id, payload)
     return {"message": "Updated successfully."}
+
+
+@router.delete("/workspaces/{workspace_id}")
+def remove_workspace(
+    workspace_id: UUID,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Permanently delete a workspace owned by the authenticated user."""
+    delete_workspace(db, workspace_id, user.id)
+    return {"message": "Deleted successfully."}
+
+
+@router.get("/workspaces/{workspace_id}/task-counts", response_model=TaskCounts)
+def workspace_task_counts(
+    workspace_id: UUID,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Return counts for every status in a workspace."""
+    return get_workspace_task_counts(db, user.id, workspace_id)
