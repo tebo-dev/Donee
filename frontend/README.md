@@ -71,3 +71,27 @@ Use `npm run format` to format changes, `npm run test:watch` for unit tests, and
 Production output is in `dist`. Configure the production host to serve `index.html` for application routes and route `/api` to the backend, or configure an API base URL at build time. The Vite development proxy is not a production API server.
 
 The previous frontend remains recoverable from Git at commit `e6faefa`. The design-study prototype remains separate from this application; its mock authentication and task data are not production implementations.
+
+## Legal documents and public contact
+
+`legal/` contains the Markdown sources for the privacy policy, terms, acceptable-use policy, content-reporting policy, and browser-storage notice. `/legal` and `/legal/:document` render those same sources without raw HTML. The legal reader loads separately from the task and authentication screens. The operator approved these documents for launch with effective/version date 2026-10-26. Explicitly pending provider and operational details remain unresolved. Publication is not verification of those practices.
+
+Set `VITE_LEGAL_CONTACT_EMAIL` in `.env.local` or the deployment build environment. Its current fallback is `its.tebo0@gmail.com`. This is public information, not a secret. Rebuild the frontend after changing it. The Markdown token `{{CONTACT_EMAIL}}` is replaced consistently in displayed text and email links. Do not replace it with a second hard-coded address in individual documents.
+
+Registration requires an unchecked-by-default agreement to the Terms and incorporated Acceptable Use Policy, with a 13+ eligibility reminder. Privacy and Browser Storage are notices, not bundled optional-processing consent. This is a frontend submission check, not verified age assurance or a stored acceptance receipt. The backend contract remains unchanged: existing users and direct API clients are not gated by acceptance. Server-side versioned receipts and enforcement are still required to guarantee acceptance for every account. Product analytics and donation payments remain unimplemented; adding either requires updating the relevant notices and controls.
+
+Appearance is remembered only when the user enables “Remember appearance on this device.” Existing stored theme/font choices are preserved. Turning remembering off removes that preference without clearing authentication. Public content-report links open an email composer with a category; they do not send messages or generate server-side cases.
+
+## Production build configuration
+
+The planned primary hostname is `donee.dev`. Cloudflare product selection, API hostname, DNS, provider regions (except S3 `us-east-2`), retention, and provider verification remains pending. No production services are provisioned by this repository change.
+
+Use the `frontend` directory as the build root, install locked dependencies with `npm ci`, and run `npm run build:deploy`; publish `dist`. Set `VITE_API_BASE_URL` to the real HTTPS backend URL and `VITE_LEGAL_CONTACT_EMAIL` to the monitored public address in the build environment. Do not use the development `/api` default unless you separately implement and verify a production proxy; the deployment check deliberately requires an absolute HTTPS API URL. All `VITE_*` values are browser-visible. Never put database, AWS, Mailgun, or signing secrets there.
+
+`npm run check:deploy` checks these public values without printing them. It does not certify legal readiness or connectivity. `npm run build` remains available for local tests and previews while production values are pending. The operator has approved the policy effective date; pending operational details and server-side acceptance enforcement remain separate deployment limitations.
+
+For Cloudflare Pages, preserve its SPA fallback (do not introduce a top-level `404.html`). For Workers static assets, configure `assets.directory` as `./dist` and `assets.not_found_handling` as `single-page-application` after choosing that product. Both must serve deep links such as `/legal/privacy` and `/workspaces` through the app. `public/_headers` supplies baseline static-response headers; Workers code or Pages Functions responses need equivalent headers separately. Verify the headers on the real hostname; Vite preview does not apply this file. A complete CSP must be designed with the final API/storage origins; the current policy only restricts framing, base URLs, and embedded objects.
+
+Configure backend CORS for the exact enabled frontend origins (for example `https://donee.dev`, and `https://www.donee.dev` only if actually served). Configure S3 CORS independently for direct browser uploads and the real frontend origin. Do not add blanket wildcard production origins. Verify API routing, preflight requests, sign-in/refresh/logout, recovery email, private task/file access, upload/download/deletion, and deep links against staging before opening public registration. Local browser tests use isolated storage and email adapters and do not verify production vendors.
+
+Keep Cloudflare Web Analytics, Zaraz, advertising pixels, and optional third-party scripts disabled unless the disclosures and required controls are implemented. Check the deployed site for provider-injected scripts and storage. Keep current HTML revalidated and never cache authenticated API responses or signed file URLs in a service worker. No service worker is shipped here.

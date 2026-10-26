@@ -19,6 +19,12 @@ export const registerSchema = loginSchema
       .min(3, 'Use at least 3 characters.')
       .max(50, 'Use no more than 50 characters.'),
     confirm: z.string(),
+    termsAccepted: z
+      .boolean()
+      .refine(
+        (value) => value,
+        'Agree to the Terms of service and Acceptable use policy to create an account.',
+      ),
   })
   .refine((value) => value.password === value.confirm, {
     path: ['confirm'],

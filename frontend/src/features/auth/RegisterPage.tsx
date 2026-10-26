@@ -80,6 +80,52 @@ export function RegisterPage() {
           registration={register('confirm')}
           error={errors.confirm?.message}
         />
+        <div className="registration-age">
+          <input
+            id="terms-accepted"
+            type="checkbox"
+            required
+            {...register('termsAccepted')}
+            aria-invalid={Boolean(errors.termsAccepted)}
+            aria-describedby={
+              errors.termsAccepted
+                ? 'eligibility-hint terms-error'
+                : 'eligibility-hint'
+            }
+          />
+          <label htmlFor="terms-accepted">
+            I agree to the{' '}
+            <Link to="/legal/terms" target="_blank" rel="noreferrer">
+              Terms of service
+            </Link>{' '}
+            and{' '}
+            <Link to="/legal/acceptable-use" target="_blank" rel="noreferrer">
+              Acceptable use policy
+            </Link>
+            .
+          </label>
+        </div>
+        {errors.termsAccepted && (
+          <p id="terms-error" className="field-error">
+            {errors.termsAccepted.message}
+          </p>
+        )}
+        <p id="eligibility-hint" className="field-hint">
+          You must be at least 13 to use Donee. Higher local age requirements
+          and any required parental or guardian authorization still apply.
+        </p>
+        <p className="field-hint">
+          Read our{' '}
+          <Link to="/legal/privacy" target="_blank" rel="noreferrer">
+            Privacy policy
+          </Link>{' '}
+          and{' '}
+          <Link to="/legal/storage" target="_blank" rel="noreferrer">
+            Browser storage notice
+          </Link>{' '}
+          to understand how your information is handled. Legal links open in a
+          new tab. Agreement to the Terms is not consent to optional tracking.
+        </p>
         <FormError message={errors.root?.message} />
         <Submit busy={isSubmitting}>Make it mine</Submit>
       </form>

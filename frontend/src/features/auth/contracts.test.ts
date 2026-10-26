@@ -25,7 +25,15 @@ describe('auth validation at the API boundary', () => {
       email: 'human@example.com',
       password: 'longpassword',
       confirm: 'different',
+      termsAccepted: true,
     };
+    expect(
+      registerSchema.safeParse({
+        ...account,
+        confirm: account.password,
+        termsAccepted: false,
+      }).success,
+    ).toBe(false);
     const result = registerSchema.safeParse(account);
     expect(result.success).toBe(false);
     if (!result.success)

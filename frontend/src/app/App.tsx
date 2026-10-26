@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
+import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { Brand } from '../components/Brand';
 import { Appearance } from '../components/Appearance';
@@ -18,7 +18,15 @@ import { WorkspaceShell } from '../features/workspaces/WorkspaceShell';
 import { WorkspaceListPage } from '../features/workspaces/WorkspaceListPage';
 import { WorkspacePage } from '../features/workspaces/WorkspacePage';
 
+const LegalPage = lazy(() => import('../features/legal/LegalPage'));
+
 const titles: Record<string, string> = {
+  '/legal': 'Legal documents',
+  '/legal/privacy': 'Privacy policy',
+  '/legal/terms': 'Terms of service',
+  '/legal/acceptable-use': 'Acceptable use',
+  '/legal/content-reports': 'Content reports',
+  '/legal/storage': 'Browser storage',
   '/login': 'Sign in',
   '/register': 'Create an account',
   '/forgot-password': 'Recover your account',
@@ -53,35 +61,49 @@ export function App() {
         </span>
         <Appearance />
       </header>
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route element={<AuthLayout />}>
-          <Route element={<SessionGate guest />}>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
+      <Suspense
+        fallback={
+          <main id="main-content" tabIndex={-1} className="legal-page">
+            <p role="status">Opening the document…</p>
+          </main>
+        }
+      >
+        <Routes>
+          <Route path="/legal" element={<LegalPage />} />
+          <Route path="/legal/:document" element={<LegalPage />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route element={<AuthLayout />}>
+            <Route element={<SessionGate guest />}>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+            </Route>
+            <Route element={<RecoveryFlow />}>
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/verify-reset-code" element={<VerifyCodePage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+            </Route>
           </Route>
-          <Route element={<RecoveryFlow />}>
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/verify-reset-code" element={<VerifyCodePage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route element={<SessionGate />}>
+            <Route path="/account" element={<AccountPage />} />
+            <Route path="/workspaces" element={<WorkspaceShell />}>
+              <Route index element={<WorkspaceListPage />} />
+              <Route path=":workspaceId" element={<WorkspacePage />} />
+              <Route
+                path=":workspaceId/settings"
+                element={<WorkspacePage settings />}
+              />
+            </Route>
           </Route>
-        </Route>
-        <Route element={<SessionGate />}>
-          <Route path="/account" element={<AccountPage />} />
-          <Route path="/workspaces" element={<WorkspaceShell />}>
-            <Route index element={<WorkspaceListPage />} />
-            <Route path=":workspaceId" element={<WorkspacePage />} />
-            <Route
-              path=":workspaceId/settings"
-              element={<WorkspacePage settings />}
-            />
-          </Route>
-        </Route>
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
       <footer className="app-footer">
         <span>Made for your kind of day.</span>
-        <span>DONEE / ONE THING AT A TIME.</span>
+        <nav aria-label="Legal and privacy">
+          <Link to="/legal/privacy">Privacy</Link>
+          <Link to="/legal/terms">Terms</Link>
+          <Link to="/legal/content-reports">Report a concern</Link>
+        </nav>
       </footer>
     </div>
   );

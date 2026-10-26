@@ -43,6 +43,7 @@ test('registration validates confirmation, handles real sign-in, restores the se
       requests.push(request.postDataJSON());
   });
   await page.goto('/register');
+  await page.getByRole('checkbox', { name: /I agree to the/ }).check();
   await page.getByLabel('Username', { exact: true }).fill(user.username);
   await page.getByLabel('Email address').fill(user.email);
   await page.getByLabel('Password', { exact: true }).fill(password);
@@ -158,6 +159,7 @@ test('duplicate registration is reported without losing the form', async ({
 }) => {
   const user = await seed(request);
   await page.goto('/register');
+  await page.getByRole('checkbox', { name: /I agree to the/ }).check();
   await page.getByLabel('Username', { exact: true }).fill(user.username);
   await page.getByLabel('Email address').fill(user.email);
   await page.getByLabel('Password', { exact: true }).fill(password);
@@ -272,6 +274,9 @@ test('appearance persists, password visibility is accessible, and all auth pages
     await page.getByRole('button', { name: 'Appearance', exact: true }).click();
   }
   await page.getByRole('button', { name: /Fira Code/ }).click();
+  await page
+    .getByRole('checkbox', { name: 'Remember appearance on this device' })
+    .check();
   await page.keyboard.press('Escape');
   await expect(
     page.getByRole('button', { name: 'Appearance', exact: true }),

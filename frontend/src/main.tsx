@@ -22,3 +22,5 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 );
 import './styles/tasks.css';
+
+import './styles/legal.css';

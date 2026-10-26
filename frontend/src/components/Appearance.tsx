@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Palette } from '@phosphor-icons/react/dist/csr/Palette';
 import { X } from '@phosphor-icons/react/dist/csr/X';
+import { Link } from 'react-router-dom';
 
 const themes = ['matrix', 'terminal', 'dracula', 'akira'] as const;
 const fonts = ['plex', 'fira'] as const;
@@ -14,9 +15,10 @@ function read() {
     return {
       theme: themes.find((theme) => theme === value.theme) || 'matrix',
       font: fonts.find((font) => font === value.font) || 'plex',
+      remember: themes.some((theme) => theme === value.theme),
     };
   } catch {
-    return { theme: 'matrix' as const, font: 'plex' as const };
+    return { theme: 'matrix' as const, font: 'plex' as const, remember: false };
   }
 }
 
@@ -25,6 +27,17 @@ export function Appearance() {
   const [saved, setSaved] = useState(true);
   const dialog = useRef<HTMLDialogElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    function onStorage(event: StorageEvent) {
+      if (event.key === key || event.key === null) {
+        // Respect another tab clearing the saved preference without changing this tab's theme.
+        if (event.newValue === null)
+          setValue((current) => ({ ...current, remember: false }));
+      }
+    }
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
   useEffect(() => {
     document.documentElement.dataset.theme = value.theme;
     document.documentElement.dataset.font = value.font;
@@ -40,7 +53,12 @@ export function Appearance() {
   function update(next: typeof value) {
     setValue(next);
     try {
-      localStorage.setItem(key, JSON.stringify(next));
+      if (next.remember)
+        localStorage.setItem(
+          key,
+          JSON.stringify({ theme: next.theme, font: next.font }),
+        );
+      else localStorage.removeItem(key);
       setSaved(true);
     } catch {
       setSaved(false);
@@ -138,10 +156,27 @@ export function Appearance() {
             ))}
           </div>
         </fieldset>
+        <label className="registration-age">
+          <input
+            type="checkbox"
+            checked={value.remember}
+            onChange={(event) =>
+              update({ ...value, remember: event.target.checked })
+            }
+          />
+          <span>Remember appearance on this device</span>
+        </label>
         <p className="appearance-note" role="status">
-          {saved
-            ? 'Your choices are saved on this device.'
-            : 'Storage is unavailable. Your choices apply until you reload.'}
+          {!saved
+            ? 'Browser storage could not be updated. Clear this site’s data in browser settings to remove older saved choices.'
+            : value.remember
+              ? 'Your theme and font are saved on this device. Turn this off to remove them.'
+              : 'Your choices apply until you reload. No appearance preference is saved.'}
+        </p>
+        <p className="appearance-note">
+          <Link to="/legal/storage" onClick={() => dialog.current?.close()}>
+            About browser storage
+          </Link>
         </p>
         <button className="primary" onClick={() => dialog.current?.close()}>
           Feels like me <span aria-hidden="true">↵</span>

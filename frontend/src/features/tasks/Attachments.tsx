@@ -22,7 +22,7 @@ const attachmentsSchema = z.object({ attachments: z.array(attachmentSchema) });
 const uploadSchema = z.object({
   attachment_id: z.string().uuid(),
   upload_url: z.string().url(),
-  upload_fields: z.record(z.string()),
+  upload_fields: z.record(z.string(), z.string()),
   upload_method: z.literal('POST'),
 });
 const types = [
