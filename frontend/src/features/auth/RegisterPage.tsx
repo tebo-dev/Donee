@@ -5,6 +5,7 @@ import type { z } from 'zod';
 import { api } from '../../lib/api';
 import { registerSchema, userSchema } from './contracts';
 import { AuthPanel, Field, FormError, Submit } from './FormParts';
+import { termsVersion, acceptableUseVersion } from '../legal/versions';
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -23,6 +24,9 @@ export function RegisterPage() {
           username: values.username,
           email: values.email,
           password: values.password,
+          terms_accepted: values.termsAccepted,
+          terms_version: termsVersion,
+          acceptable_use_version: acceptableUseVersion,
         },
       });
       navigate('/login', {

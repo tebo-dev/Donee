@@ -8,7 +8,14 @@ def register_user(
 
     return client.post(
         "/auth/register",
-        json={"email": email, "username": username, "password": password},
+        json={
+            "email": email,
+            "username": username,
+            "password": password,
+            "terms_accepted": True,
+            "terms_version": "2026-10-26",
+            "acceptable_use_version": "2026-10-26",
+        },
     )
 
 

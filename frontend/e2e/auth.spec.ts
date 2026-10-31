@@ -1,3 +1,4 @@
+import { registrationAgreement } from './legal-agreement';
 import { test } from './fixtures';
 import { expect, type Page, type APIRequestContext } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
@@ -13,7 +14,9 @@ function identity() {
 }
 async function seed(request: APIRequestContext) {
   const user = identity();
-  const response = await request.post('/api/auth/register', { data: user });
+  const response = await request.post('/api/auth/register', {
+    data: { ...user, ...registrationAgreement },
+  });
   expect(response.status()).toBe(201);
   return user;
 }
@@ -59,7 +62,7 @@ test('registration validates confirmation, handles real sign-in, restores the se
   await expect(page.getByRole('status')).toContainText(
     'Your account is ready.',
   );
-  expect(requests).toEqual([user]);
+  expect(requests).toEqual([{ ...user, ...registrationAgreement }]);
   await signIn(page, user.email, 'incorrect-password');
   await expect(page.getByRole('alert')).toHaveText('Invalid credentials.');
   await signIn(page, user.email);

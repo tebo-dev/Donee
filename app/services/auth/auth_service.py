@@ -9,6 +9,7 @@ from app.core.domain_errors.auth_domain_errors import (
     UsernameTaken,
 )
 from app.core.security import hash_password, verify_password
+from app.models.auth.policy_acceptance import PolicyAcceptance
 from app.models.auth.user import User
 from app.schemas.auth.user import Token, UserCreate
 from app.services.auth.email_service import send_email
@@ -54,6 +55,15 @@ def register_user(db: Session, user_create: UserCreate) -> User:
     )
 
     db.add(user)
+    db.flush()
+
+    db.add(
+        PolicyAcceptance(
+            user_id=user.id,
+            terms_version=user_create.terms_version,
+            acceptable_use_version=user_create.acceptable_use_version,
+        )
+    )
     db.flush()
 
     create_default_workspace_for_user(db, user.id)

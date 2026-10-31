@@ -1,3 +1,4 @@
+import { registrationAgreement } from './legal-agreement';
 import { test } from './fixtures';
 import { rememberSession, installSession } from './session';
 import { expect, type APIRequestContext, type Page } from '@playwright/test';
@@ -11,7 +12,11 @@ async function seed(request: APIRequestContext) {
     password: 'tasks-test-123',
   };
   expect(
-    (await request.post('/api/auth/register', { data: account })).status(),
+    (
+      await request.post('/api/auth/register', {
+        data: { ...account, ...registrationAgreement },
+      })
+    ).status(),
   ).toBe(201);
   const login = await request.post('/api/auth/login', {
     data: { email: account.email, password: account.password },

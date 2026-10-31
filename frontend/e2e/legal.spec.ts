@@ -136,7 +136,7 @@ test('appearance remembering is optional and can be removed without clearing sig
   await expect(remember).not.toBeChecked();
 });
 
-test('registration requires explicit terms agreement without adding unsupported API fields', async ({
+test('registration requires explicit terms agreement and sends the accepted policy versions', async ({
   page,
 }) => {
   const suffix = crypto.randomUUID().slice(0, 8);
@@ -165,5 +165,10 @@ test('registration requires explicit terms agreement without adding unsupported 
   await page.getByRole('checkbox', { name: /I agree to the/ }).check();
   await page.getByRole('button', { name: 'Make it mine' }).click();
   await expect(page).toHaveURL('/login');
-  expect(Object.keys(payload!)).toEqual(['username', 'email', 'password']);
+  expect(payload).toMatchObject({
+    terms_accepted: true,
+    terms_version: '2026-10-26',
+    acceptable_use_version: '2026-10-26',
+  });
+  expect(payload).not.toHaveProperty('accepted_at');
 });

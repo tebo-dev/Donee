@@ -1,24 +1,31 @@
 """Backend/frontend contracts: filtering, deletion, priority and login sessions."""
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock
 from uuid import UUID, uuid4
 
 import pytest
 from botocore.exceptions import ClientError
-from sqlalchemy import func, select
+from fastapi import HTTPException
+from sqlalchemy import create_engine, event, func, select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 from app.core.jwt_handler import create_access_token, decode_access_token
+from app.core.security import hash_password
+from app.db.base import Base
 from app.models import (
     Attachment,
     AuthSession,
     RefreshToken,
     Task,
     TaskTag,
+    User,
     Workspace,
     WorkspaceMember,
 )
+from app.services.auth.session_service import create_session, refresh_session
 from tests.test_security_regressions import account, tag, task
 from tests.utils import login_user, register_user
 
@@ -444,17 +451,6 @@ def test_workspace_delete_storage_failure_preserves_records_and_can_retry(
 
 def test_concurrent_refresh_replay_revokes_family(tmp_path):
     """Two workers cannot consume one secret and leave two active successors."""
-    from concurrent.futures import ThreadPoolExecutor
-
-    from fastapi import HTTPException
-    from sqlalchemy import create_engine, event
-    from sqlalchemy.orm import Session
-
-    from app.core.security import hash_password
-    from app.db.base import Base
-    from app.models import User
-    from app.services.auth.session_service import create_session, refresh_session
-
     engine = create_engine(
         "sqlite:///" + str(tmp_path / "sessions.sqlite"),
         connect_args={"check_same_thread": False, "timeout": 10},

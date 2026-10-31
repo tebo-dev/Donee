@@ -2,7 +2,9 @@
 
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, StrictBool, field_validator
+
+from app.core.legal import ACCEPTABLE_USE_VERSION, TERMS_VERSION
 
 # Requests
 
@@ -29,6 +31,35 @@ class UserCreate(AuthInput):
     email: EmailStr
     username: str = Field(min_length=3, max_length=50)
     password: str = Field(min_length=8, max_length=128)
+    terms_accepted: StrictBool
+    terms_version: str = Field(min_length=1, max_length=40)
+    acceptable_use_version: str = Field(min_length=1, max_length=40)
+
+    @field_validator("terms_accepted")
+    @classmethod
+    def require_agreement(cls, value):
+        """Reject false and require an explicit JSON boolean true."""
+        if not value:
+            raise ValueError(
+                "Agreement to the Terms and Acceptable Use Policy is required."
+            )
+        return value
+
+    @field_validator("terms_version", "acceptable_use_version")
+    @classmethod
+    def require_current_version(cls, value, info):
+        """An old client must not silently accept newer terms."""
+        expected = (
+            TERMS_VERSION
+            if info.field_name == "terms_version"
+            else ACCEPTABLE_USE_VERSION
+        )
+        if value != expected:
+            raise ValueError(
+                "Policy version is outdated. "
+                "Reload Donee and review the current policies."
+            )
+        return value
 
 
 class UserLogin(AuthInput):

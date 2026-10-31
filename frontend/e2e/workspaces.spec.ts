@@ -1,3 +1,4 @@
+import { registrationAgreement } from './legal-agreement';
 import { test } from './fixtures';
 import { rememberSession, installSession } from './session';
 import { expect, type APIRequestContext, type Page } from '@playwright/test';
@@ -23,7 +24,11 @@ async function seed(request: APIRequestContext) {
     password: 'a-little-space-123',
   };
   expect(
-    (await request.post('/api/auth/register', { data: account })).status(),
+    (
+      await request.post('/api/auth/register', {
+        data: { ...account, ...registrationAgreement },
+      })
+    ).status(),
   ).toBe(201);
   const token = await tokenFor(request, account.email, account.password);
   const headers = { Authorization: `Bearer ${token}` };
