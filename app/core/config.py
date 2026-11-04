@@ -47,6 +47,7 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str
+    DATABASE_URL_UNPOOLED: str | None = None
 
     # Authentication / JWT
     JWT_SECRET_KEY: str

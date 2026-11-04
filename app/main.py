@@ -68,6 +68,12 @@ app.include_router(task_router, tags=["task"])
 app.include_router(tag_router, tags=["tag"])
 
 
+@app.get("/health", include_in_schema=False)
+def health() -> dict[str, str]:
+    """Let the deployment platform verify that the API process is serving."""
+    return {"status": "ok"}
+
+
 @app.exception_handler(DomainError)
 async def domain_error_handler(request: Request, exc: DomainError):
     """Domain errors handler."""

@@ -16,8 +16,10 @@ sys.path.append(str(BASE_DIR))
 # access to the values within the .ini file in use.
 config = context.config
 
-# Overide DB url.
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Neon can use its pooled URL at runtime and a direct URL for migrations.
+# ConfigParser requires escaping percent-encoded credentials in either URL.
+database_url = settings.DATABASE_URL_UNPOOLED or settings.DATABASE_URL
+config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

@@ -65,6 +65,16 @@ Development is done using a **vertical slice approach**:
 - Core task management MVP
 - Frontend foundation ready; authentication, workspaces, and tasks will be implemented and tested in stages. See [frontend setup](frontend/README.md).
 
+## Deployment
+
+The backend deploys from the repository root on Railway using `railway.json`.
+It installs `requirements.txt` with Python 3.14.2, runs Alembic before deployment,
+and starts `app.main:app` on Railway's assigned port. The frontend is built
+separately on Cloudflare Pages; PostgreSQL is hosted on Neon.
+
+See [the deployment guide](DEPLOYMENT.md) for service settings, environment
+variables, database setup, and launch verification.
+
 ---
 
 ## 📌 Status
