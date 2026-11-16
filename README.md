@@ -1,89 +1,75 @@
-# DONEE 🧠✨
-
-🚧 **Project under active development**
-
-Donee is a modern, dark-first task management web application focused on clarity, structure, and calm productivity.
-
-This project is being built as a long-term professional full-stack portfolio project, following clean architecture principles and incremental development practices.
-
----
-
-## 🎯 Vision
-
-Donee aims to provide a structured environment where users can:
-
-- Organize tasks clearly
-- Group work into projects and workspaces
-- Stay productive without visual overload
-- Experience a minimal, distraction-free interface
-
-The frontend follows the **Phosphor aesthetic**: terminal-inspired surfaces, a pixel ghost, and Matrix, Terminal, Dracula, and Akira palettes.
+<div align="center">
+  <img src="frontend/public/favicon.svg" width="80" height="80" alt="Donee's pixel computer" />
+  <h1>Donee</h1>
+  <p><strong>A quiet task manager with a terminal soul.</strong></p>
+  <p>Workspaces for your work. Shortcuts for your flow.</p>
+  <p><a href="https://donee.dev"><strong>Open Donee ↗</strong></a> · <a href="#what-you-can-do">Explore v1</a> · <a href="https://buymeacoffee.com/tebo.dev">Buy me a coffee ☕</a></p>
+</div>
 
 ---
 
-## 🏗️ Architecture Philosophy
+Donee is a personal task manager for keeping track of what you’re doing, what’s due, and what’s finished. Use it to plan a side project, organize coursework, or keep errands separate from work. Give each area its own workspace and keep the links and files you need on the task itself.
 
-Donee follows a layered backend architecture:
+## What you can do
 
-> Routes → Services → Schemas → Models → Database
+- **Give each area of your life its own space.** Create workspaces for things like a semester, a launch, or home admin.
+- **See what needs attention.** Add due dates, priorities, and tags, then search and filter by status, tag, or date. Sort by due date to see what’s next.
+- **Keep context close.** Attach a reference link, sketch, PDF, or text file to the task it belongs to.
+- **Follow work through.** Mark a task in progress or blocked, complete it, reopen it, or archive it for later reference.
+- **Make it feel like yours.** Pick Matrix, Terminal, Dracula, or Akira. Choose IBM Plex Mono or Fira Code for the small details.
 
-This separation ensures:
+**v1 is live and built for individual use.** Shared workspaces and team collaboration are outside this release.
 
-- Maintainability
-- Scalability
-- Clear responsibility boundaries
-- Testability
+## A few keystrokes go a long way
 
-Development is done using a **vertical slice approach**:
+On a workspace’s task board:
 
-> Design → Implement → Test → Iterate
+| Key | Action |
+| --- | --- |
+| `j` / `k` or arrow keys | Move through the task list |
+| `l` or `Enter` | Open the selected task |
+| `x` | Complete or reopen the selected task |
+| `a` | Add a task |
+| `/` | Focus search |
+| `?` | Show shortcuts |
+
+## Under the hood
+
+| Layer | Built with |
+| --- | --- |
+| Web app | React, TypeScript, Vite, React Router, TanStack Query, React Hook Form, and Zod |
+| Interface | Custom CSS, Phosphor Icons, and locally bundled fonts |
+| API | Python, FastAPI, Pydantic, and Uvicorn |
+| Data | PostgreSQL on Neon, SQLAlchemy, and Alembic migrations |
+| Accounts | Argon2 password hashing, JWT access tokens, rotating refresh tokens, and Mailgun recovery email |
+| Attachments | Private Amazon S3 storage with short-lived signed upload and download links |
+| Hosting | Cloudflare Pages for the frontend; Railway for the API |
+| Tests | pytest, Vitest, Testing Library, Playwright, and axe |
+
+The browser talks to the FastAPI service for tasks, accounts, and workspace data. FastAPI checks access and signs attachment links; file bytes travel directly between the browser and S3.
+
+## Work on Donee
+
+Use Python 3.14.2, Node.js 24, and PostgreSQL. Create a Python virtual environment and install `requirements.txt`. Configure the backend from [the environment example](.env.example) with a dedicated development database and test provider settings.
+
+From the repository root, with the virtual environment active and the development database configured:
+
+```sh
+python -m pip install -r requirements.txt
+python -m alembic upgrade head
+python -m uvicorn app.main:app --reload
+```
+
+In a second terminal:
+
+```sh
+cd frontend
+npm ci
+npm run dev
+```
+
+Open [the local app](http://127.0.0.1:5173). Vite proxies API requests to port 8000 by default. See the [frontend guide](frontend/README.md) for local configuration and test commands, and the [deployment guide](DEPLOYMENT.md) for hosting, database migrations, and provider setup.
 
 ---
 
-## 🛠️ Tech Stack
-
-### Backend
-- Python
-- FastAPI
-- PostgreSQL
-- SQLAlchemy
-- JWT Authentication
-
-### Frontend
-- HTML
-- CSS
-- React with TypeScript and Vite
-
-### Testing
-- pytest
-
----
-
-## 🚀 Current Development Focus
-
-- Authentication system (Register / Login / Password Reset)
-- Core task management MVP
-- Frontend foundation ready; authentication, workspaces, and tasks will be implemented and tested in stages. See [frontend setup](frontend/README.md).
-
-## Deployment
-
-The backend deploys from the repository root on Railway using `railway.json`.
-It installs `requirements.txt` with Python 3.14.2, runs Alembic before deployment,
-and starts `app.main:app` on Railway's assigned port. The frontend is built
-separately on Cloudflare Pages; PostgreSQL is hosted on Neon.
-
-See [the deployment guide](DEPLOYMENT.md) for service settings, environment
-variables, database setup, and launch verification.
-
----
-
-## 📌 Status
-
-The project is currently in active development.
-Features and structure may evolve as the system matures.
-
----
-
-## 👤 Author
-
-Built by Esteban as a full-stack development project focused on writing clean, maintainable, production-style code.
+Built by [Esteban](https://github.com/tebo-dev). If Donee helps you get something done and you’d like to support the project, [you can buy me a coffee](https://buymeacoffee.com/tebo.dev). Thanks for giving it a try!
