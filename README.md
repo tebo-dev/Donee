@@ -3,7 +3,7 @@
   <h1>Donee</h1>
   <p><strong>A quiet task manager with a terminal soul.</strong></p>
   <p>Workspaces for your work. Shortcuts for your flow.</p>
-  <p><a href="https://donee.dev"><strong>Open Donee ↗</strong></a> · <a href="#what-you-can-do">Explore v1</a> · <a href="https://buymeacoffee.com/tebo.dev">Buy me a coffee ☕</a></p>
+  <p><a href="https://app.donee.dev"><strong>Open Donee ↗</strong></a> · <a href="#what-you-can-do">Explore v1</a> · <a href="https://buymeacoffee.com/tebo.dev">Buy me a coffee ☕</a></p>
 </div>
 
 ---
