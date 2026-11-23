@@ -137,3 +137,25 @@ scripts should remain disabled as described in `frontend/README.md`.
 - [Neon connection pooling](https://neon.com/docs/connect/connection-pooling)
 - [Cloudflare Pages builds](https://developers.cloudflare.com/pages/configuration/build-configuration/)
 - [Cloudflare Pages SPA routing](https://developers.cloudflare.com/pages/configuration/serving-pages/#single-page-application-spa-rendering)
+
+## Performance deployment settings (2026-11-23)
+
+The backend's single replica is configured for US East Metal
+(`us-east4-eqdc4a`), nearer the Neon database in AWS Ohio. `railpack.json`
+supplies the build-time start command; the service also has the explicit
+Uvicorn start command and `/health` health check. Railpack's
+`RAILPACK_START_CMD` service variable is the equivalent fallback when a build
+does not read the repository file. Do not add automatic production migrations
+as part of performance tuning: schema changes need their own reviewed release.
+
+Some Railway management APIs now reject the legacy `railwayConfigFile` setting.
+Keep runtime settings explicit in that case. `railway.json` remains in this
+repository as the legacy deployment reference; verify the settings used by the
+actual deployment instead of assuming the file was consumed.
+
+Task pages, task detail, tags, attachments, and workspaces use a 30-second
+in-memory freshness window. Existing per-user/workspace keys and mutation
+invalidation remain in place. Authentication changes clear the query client;
+private API responses and signed download addresses are not put in a CDN cache.
+See the local performance report under `docs/` for measurements and remaining
+verification work.

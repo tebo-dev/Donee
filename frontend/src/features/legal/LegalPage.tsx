@@ -1,3 +1,4 @@
+import '../../styles/legal.css';
 import Markdown from 'react-markdown';
 import { Link, useParams } from 'react-router-dom';
 import privacy from '../../../legal/privacy-policy.md?raw';

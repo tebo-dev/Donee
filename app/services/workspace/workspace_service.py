@@ -107,15 +107,8 @@ def get_user_workspaces(db: Session, user_id: UUID) -> WorkspaceListOut:
     stmt = select(WorkspaceMember.workspace_id).where(
         WorkspaceMember.user_id == user_id, WorkspaceMember.role == "owner"
     )
-    workspaces_ids = db.execute(stmt).scalars().all()
-
-    if not workspaces_ids:
-        return WorkspaceListOut(workspaces=[])
-
     user_workspaces = (
-        db.execute(select(Workspace).where(Workspace.id.in_(workspaces_ids)))
-        .scalars()
-        .all()
+        db.execute(select(Workspace).where(Workspace.id.in_(stmt))).scalars().all()
     )
 
     return WorkspaceListOut(workspaces=user_workspaces)

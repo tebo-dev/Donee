@@ -13,10 +13,26 @@ import {
   VerifyCodePage,
 } from '../features/auth/RecoveryPages';
 import { SessionGate } from '../features/auth/SessionGate';
-import { AccountPage } from '../features/auth/AccountPage';
-import { WorkspaceShell } from '../features/workspaces/WorkspaceShell';
-import { WorkspaceListPage } from '../features/workspaces/WorkspaceListPage';
-import { WorkspacePage } from '../features/workspaces/WorkspacePage';
+const AccountPage = lazy(() =>
+  import('../features/auth/AccountPage').then((module) => ({
+    default: module.AccountPage,
+  })),
+);
+const WorkspaceShell = lazy(() =>
+  import('../features/workspaces/WorkspaceShell').then((module) => ({
+    default: module.WorkspaceShell,
+  })),
+);
+const WorkspaceListPage = lazy(() =>
+  import('../features/workspaces/WorkspaceListPage').then((module) => ({
+    default: module.WorkspaceListPage,
+  })),
+);
+const WorkspacePage = lazy(() =>
+  import('../features/workspaces/WorkspacePage').then((module) => ({
+    default: module.WorkspacePage,
+  })),
+);
 
 const LegalPage = lazy(() => import('../features/legal/LegalPage'));
 
@@ -64,7 +80,7 @@ export function App() {
       <Suspense
         fallback={
           <main id="main-content" tabIndex={-1} className="legal-page">
-            <p role="status">Opening the document…</p>
+            <p role="status">Opening your space…</p>
           </main>
         }
       >

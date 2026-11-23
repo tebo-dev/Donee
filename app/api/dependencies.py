@@ -46,13 +46,18 @@ def get_current_user(
     except (JWTError, ValueError, TypeError) as error:
         raise credential_exception from error
 
-    stmt = select(User).where(User.id == user_id)
-    user = db.execute(stmt).scalars().first()
-
-    if user is None or not user.is_active or payload.get("ver") != user.token_version:
+    stmt = (
+        select(User, AuthSession)
+        .join(AuthSession, AuthSession.user_id == User.id)
+        .where(User.id == user_id, AuthSession.id == session_id)
+    )
+    row = db.execute(stmt).first()
+    if row is None:
+        raise credential_exception
+    user, session = row
+    if not user.is_active or payload.get("ver") != user.token_version:
         raise credential_exception
 
-    session = db.get(AuthSession, session_id)
     if not session_is_active(session) or session.user_id != user.id:
         raise credential_exception
 

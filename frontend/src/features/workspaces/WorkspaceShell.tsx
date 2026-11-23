@@ -1,3 +1,4 @@
+import '../../styles/workspaces.css';
 import { useRef, useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { FolderSimple } from '@phosphor-icons/react/dist/csr/FolderSimple';

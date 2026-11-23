@@ -1,3 +1,4 @@
+import '../../styles/tasks.css';
 import { useEffect, useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';

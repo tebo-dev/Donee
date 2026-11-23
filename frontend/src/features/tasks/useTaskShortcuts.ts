@@ -1,4 +1,5 @@
 import { useEffect, type RefObject } from 'react';
+import { useLocation } from 'react-router-dom';
 
 export function useTaskShortcuts({
   enabled,
@@ -21,10 +22,14 @@ export function useTaskShortcuts({
   onToggle: (id: string) => void;
   onLeaveSearch: () => void;
 }) {
+  const { pathname } = useLocation();
   useEffect(() => {
     if (!enabled) return;
     function handleKey(event: KeyboardEvent) {
       if (
+        // A lazy route can keep the previous screen mounted during navigation.
+        // Stop its shortcuts as soon as the browser has left that screen.
+        window.location.pathname !== pathname ||
         event.defaultPrevented ||
         event.ctrlKey ||
         event.metaKey ||
@@ -119,6 +124,7 @@ export function useTaskShortcuts({
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
   }, [
+    pathname,
     enabled,
     canEdit,
     busy,

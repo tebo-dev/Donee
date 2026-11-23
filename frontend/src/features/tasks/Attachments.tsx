@@ -57,6 +57,7 @@ export function Attachments({
   const query = useQuery({
     queryKey: [...key, 'attachments', taskId],
     retry: false,
+    staleTime: 30_000,
     queryFn: ({ signal }) => request(path, attachmentsSchema, { signal }),
   });
   const [name, setName] = useState('');

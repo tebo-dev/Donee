@@ -34,6 +34,7 @@ export function TaskEditor({
     queryKey: [...key, 'detail', taskId],
     enabled: Boolean(taskId),
     retry: false,
+    staleTime: 30_000,
     queryFn: ({ signal }) =>
       request(`/tasks/${taskId}`, taskSchema, { signal }),
   });

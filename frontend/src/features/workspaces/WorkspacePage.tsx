@@ -9,10 +9,15 @@ import { WorkspaceError } from './WorkspaceError';
 import { DeleteWorkspace } from './DeleteWorkspace';
 import { RenameWorkspace } from './RenameWorkspace';
 import { TaskBoard } from '../tasks/TaskBoard';
+import { useWorkspaceTaskPrefetch } from '../tasks/queries';
 
 export function WorkspacePage({ settings = false }: { settings?: boolean }) {
   const { workspaceId = '' } = useParams();
   const query = useWorkspace(workspaceId);
+  useWorkspaceTaskPrefetch(
+    workspaceId,
+    query.valid && !settings && !query.isError,
+  );
   const owned = useWorkspaces();
   const location = useLocation();
   const created = Boolean(

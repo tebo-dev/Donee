@@ -5,3 +5,7 @@
   X-Frame-Options: DENY
   Content-Security-Policy: frame-ancestors 'none'; base-uri 'self'; object-src 'none'
   Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+# Vite fingerprints these public build assets; new releases get new URLs.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

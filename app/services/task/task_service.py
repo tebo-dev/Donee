@@ -3,7 +3,7 @@
 from datetime import date
 from uuid import UUID
 
-from sqlalchemy import case, func, select
+from sqlalchemy import and_, case, func, select
 from sqlalchemy.orm import Session
 
 from app.core.domain_errors.tag_domain_errors import TagNotFound
@@ -257,11 +257,8 @@ def get_workspace_tasks(
         tags = tags_by_task[task.id]
         preview.tags = TagListOut(tags=tags, total=len(tags))
         previews.append(preview)
-    return TaskListOut(
-        tasks=previews,
-        total=db.scalar(select(func.count()).select_from(Task).where(*predicates)),
-        counts=get_workspace_task_counts(db, user_id, workspace_id),
-    )
+    counts, total = _workspace_task_counts(db, workspace_id, predicates)
+    return TaskListOut(tasks=previews, total=total, counts=counts)
 
 
 def get_workspace_task_counts(
@@ -270,23 +267,35 @@ def get_workspace_task_counts(
     """Return complete workspace counts without downloading tasks."""
     if not get_member(db, user_id, workspace_id):
         raise NotAuthorized()
-    counts = dict(
-        db.execute(
-            select(Task.status, func.count())
-            .where(Task.workspace_id == workspace_id)
-            .group_by(Task.status)
-        ).all()
-    )
-    return TaskCounts(
-        total=sum(counts.values()),
-        to_do=counts.get("to do", 0),
-        in_progress=counts.get("in_progress", 0),
-        blocked=counts.get("blocked", 0),
-        done=counts.get("done", 0),
-        archived=counts.get("archived", 0),
-        active=sum(
-            counts.get(status, 0) for status in ("to do", "in_progress", "blocked")
+    return _workspace_task_counts(db, workspace_id)[0]
+
+
+def _workspace_task_counts(db: Session, workspace_id: UUID, predicates=()):
+    """Combine filtered total and workspace counts after membership is checked."""
+    rows = db.execute(
+        select(
+            Task.status,
+            func.count(),
+            func.count().filter(and_(Task.workspace_id == workspace_id, *predicates)),
+        )
+        .where(Task.workspace_id == workspace_id)
+        .group_by(Task.status)
+    ).all()
+    counts = {status: count for status, count, _ in rows}
+    filtered_total = sum(filtered for _, _, filtered in rows)
+    return (
+        TaskCounts(
+            total=sum(counts.values()),
+            to_do=counts.get("to do", 0),
+            in_progress=counts.get("in_progress", 0),
+            blocked=counts.get("blocked", 0),
+            done=counts.get("done", 0),
+            archived=counts.get("archived", 0),
+            active=sum(
+                counts.get(status, 0) for status in ("to do", "in_progress", "blocked")
+            ),
         ),
+        filtered_total,
     )
 
 
