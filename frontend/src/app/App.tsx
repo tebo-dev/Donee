@@ -114,7 +114,7 @@ export function App() {
         </Routes>
       </Suspense>
       <footer className="app-footer">
-        <span>Made for your kind of day.</span>
+        <span>Donee</span>
         <nav aria-label="Legal and privacy">
           <Link to="/legal/privacy">Privacy</Link>
           <Link to="/legal/terms">Terms</Link>

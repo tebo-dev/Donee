@@ -41,7 +41,7 @@ export function LoginPage() {
       path="welcome_back"
       index="01 / SIGN IN"
       title="Welcome back, human."
-      description="Your little corner is right where you left it."
+      description="Sign in to your account."
     >
       {notice && (
         <p className="form-message" role="status">
@@ -78,7 +78,6 @@ export function LoginPage() {
           error={errors.password?.message}
         />
         <div className="form-options">
-          <span>Good to have you here.</span>
           <Link to="/forgot-password">Forgot password?</Link>
         </div>
         <FormError message={errors.root?.message} />
@@ -89,9 +88,6 @@ export function LoginPage() {
         <Link to="/register">
           Create an account <span aria-hidden="true">↗</span>
         </Link>
-      </p>
-      <p className="form-footnote">
-        A little less to remember. A little more room to think.
       </p>
     </AuthPanel>
   );

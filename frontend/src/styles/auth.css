@@ -412,17 +412,17 @@ button:disabled {
   display: block;
   width: 12px;
   height: 12px;
-  background: #b5f36b;
+  background: #e6b997;
   flex-shrink: 0;
 }
-[data-palette='terminal'] .theme-swatch {
-  background: #91d9f7;
+[data-palette='firefly'] .theme-swatch {
+  background: #e7c56f;
 }
-[data-palette='dracula'] .theme-swatch {
-  background: #bd93f9;
+[data-palette='abyss'] .theme-swatch {
+  background: #c6a3f4;
 }
-[data-palette='akira'] .theme-swatch {
-  background: #ff655c;
+[data-palette='sky'] .theme-swatch {
+  background: #edb2a5;
 }
 .font-choices {
   display: grid;
@@ -594,4 +594,11 @@ button:disabled {
   .secondary:active:not(:disabled) {
     transform: none;
   }
+}
+
+.auth-form-wrap {
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-surface), transparent 10%);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
 }

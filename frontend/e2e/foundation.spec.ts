@@ -41,3 +41,43 @@ test('deep links fall back to the router and keyboard users can return home', as
     page.getByRole('heading', { name: 'Less noise. More doing.' }),
   ).toBeVisible();
 });
+
+test('living themes migrate legacy preferences and keep motion optional', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    if (!sessionStorage.getItem('theme-migration-seeded')) {
+      localStorage.setItem(
+        'donee-appearance',
+        JSON.stringify({ theme: 'dracula', font: 'fira' }),
+      );
+      sessionStorage.setItem('theme-migration-seeded', '1');
+    }
+  });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/login');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'abyss');
+  await expect(page.locator('html')).toHaveAttribute('data-font', 'fira');
+  await expect
+    .poll(() =>
+      page
+        .locator('.ambient-background')
+        .evaluate((c) => (c as HTMLCanvasElement).width),
+    )
+    .toBeGreaterThan(300);
+  await page.getByRole('button', { name: 'Appearance', exact: true }).click();
+  await page
+    .getByRole('checkbox', { name: 'Pause background animation' })
+    .check();
+  await page.getByRole('button', { name: 'Paper Sky', exact: true }).click();
+  await page.keyboard.press('Escape');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'sky');
+  await page.getByRole('button', { name: 'Appearance', exact: true }).click();
+  await expect(
+    page.getByRole('checkbox', { name: 'Pause background animation' }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole('button', { name: 'Matrix', exact: true }),
+  ).toHaveCount(0);
+});

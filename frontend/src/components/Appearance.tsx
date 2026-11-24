@@ -2,8 +2,21 @@ import { useEffect, useRef, useState } from 'react';
 import { Palette } from '@phosphor-icons/react/dist/csr/Palette';
 import { X } from '@phosphor-icons/react/dist/csr/X';
 import { Link } from 'react-router-dom';
+import { AmbientBackground } from './AmbientBackground';
 
-const themes = ['matrix', 'terminal', 'dracula', 'akira'] as const;
+const themes = ['koi', 'abyss', 'firefly', 'sky'] as const;
+const themeNames = {
+  koi: 'Koi Garden',
+  abyss: 'Abyss',
+  firefly: 'Firefly Terminal',
+  sky: 'Paper Sky',
+};
+const legacyThemes: Record<string, string> = {
+  matrix: 'koi',
+  terminal: 'firefly',
+  dracula: 'abyss',
+  akira: 'sky',
+};
 const fonts = ['plex', 'fira'] as const;
 const key = 'donee-appearance';
 function read() {
@@ -12,13 +25,23 @@ function read() {
       string,
       unknown
     >;
+    const storedTheme =
+      typeof value.theme === 'string'
+        ? legacyThemes[value.theme] || value.theme
+        : '';
     return {
-      theme: themes.find((theme) => theme === value.theme) || 'matrix',
+      paused: value.paused === true,
+      theme: themes.find((theme) => theme === storedTheme) || 'koi',
       font: fonts.find((font) => font === value.font) || 'plex',
-      remember: themes.some((theme) => theme === value.theme),
+      remember: themes.some((theme) => theme === storedTheme),
     };
   } catch {
-    return { theme: 'matrix' as const, font: 'plex' as const, remember: false };
+    return {
+      theme: 'koi' as const,
+      font: 'plex' as const,
+      remember: false,
+      paused: false,
+    };
   }
 }
 
@@ -56,7 +79,11 @@ export function Appearance() {
       if (next.remember)
         localStorage.setItem(
           key,
-          JSON.stringify({ theme: next.theme, font: next.font }),
+          JSON.stringify({
+            theme: next.theme,
+            font: next.font,
+            paused: next.paused,
+          }),
         );
       else localStorage.removeItem(key);
       setSaved(true);
@@ -66,6 +93,7 @@ export function Appearance() {
   }
   return (
     <>
+      <AmbientBackground theme={value.theme} paused={value.paused} />
       <button
         ref={trigger}
         type="button"
@@ -95,8 +123,7 @@ export function Appearance() {
       >
         <div className="appearance-heading">
           <div>
-            <span className="eyebrow">MAKE YOURSELF AT HOME</span>
-            <h2 id="appearance-title">Your kind of quiet.</h2>
+            <h2 id="appearance-title">Appearance</h2>
           </div>
           <button
             className="icon-button"
@@ -117,8 +144,7 @@ export function Appearance() {
                 onClick={() => update({ ...value, theme })}
               >
                 <span className="theme-swatch" aria-hidden="true" />
-                {theme[0]?.toUpperCase()}
-                {theme.slice(1)}
+                {themeNames[theme]}
                 <span aria-hidden="true">
                   {value.theme === theme ? '●' : '○'}
                 </span>
@@ -141,14 +167,7 @@ export function Appearance() {
                 <span className="font-sample" aria-hidden="true">
                   Aa
                 </span>
-                <span>
-                  {font === 'plex' ? 'IBM Plex Mono' : 'Fira Code'}
-                  <small>
-                    {font === 'plex'
-                      ? 'A little warmth in the terminal.'
-                      : 'Crisp characters. Familiar rhythm.'}
-                  </small>
-                </span>
+                <span>{font === 'plex' ? 'IBM Plex Mono' : 'Fira Code'}</span>
                 <span aria-hidden="true">
                   {value.font === font ? '●' : '○'}
                 </span>
@@ -156,6 +175,26 @@ export function Appearance() {
             ))}
           </div>
         </fieldset>
+        <label className="registration-age">
+          <input
+            type="checkbox"
+            checked={value.paused}
+            onChange={(event) =>
+              update({ ...value, paused: event.target.checked })
+            }
+          />
+          <span>Pause background animation</span>
+        </label>
+        <p className="appearance-note">
+          System reduced-motion settings also pause the background.{' '}
+          <a
+            href="/licenses/ascii-animals.txt"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Animation license
+          </a>
+        </p>
         <label className="registration-age">
           <input
             type="checkbox"
@@ -170,7 +209,7 @@ export function Appearance() {
           {!saved
             ? 'Browser storage could not be updated. Clear this site’s data in browser settings to remove older saved choices.'
             : value.remember
-              ? 'Your theme and font are saved on this device. Turn this off to remove them.'
+              ? 'Your appearance settings are saved on this device. Turn this off to remove them.'
               : 'Your choices apply until you reload. No appearance preference is saved.'}
         </p>
         <p className="appearance-note">
@@ -179,7 +218,7 @@ export function Appearance() {
           </Link>
         </p>
         <button className="primary" onClick={() => dialog.current?.close()}>
-          Feels like me <span aria-hidden="true">↵</span>
+          Done <span aria-hidden="true">↵</span>
         </button>
       </dialog>
     </>

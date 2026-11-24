@@ -8,6 +8,7 @@ import {
   localToday,
   messageSchema,
   statuses,
+  priorityLabels,
   statusLabels,
   tagPatch,
   taskFormSchema,
@@ -29,6 +30,7 @@ export function TaskEditor({
   canEdit: boolean;
   onClose: () => void;
 }) {
+  const [editing, setEditing] = useState(!taskId);
   const { request, key } = useTaskApi(workspaceId);
   const query = useQuery({
     queryKey: [...key, 'detail', taskId],
@@ -59,6 +61,79 @@ export function TaskEditor({
         <p role="alert">This task belongs to a different workspace.</p>
       </Modal>
     );
+  if (query.data && !editing) {
+    const task = query.data;
+    return (
+      <Modal title={task.title} onClose={onClose}>
+        <article className="task-detail">
+          <dl className="task-detail-facts">
+            <div>
+              <dt>Status</dt>
+              <dd>{statusLabels[task.status]}</dd>
+            </div>
+            <div>
+              <dt>Priority</dt>
+              <dd>{priorityLabels[task.priority]}</dd>
+            </div>
+            <div>
+              <dt>Due date</dt>
+              <dd>
+                <time dateTime={task.due_at}>{task.due_at}</time>
+              </dd>
+            </div>
+          </dl>
+          <h3>Description</h3>
+          <p className="task-detail-description">
+            {task.description || 'No description.'}
+          </p>
+          <h3>Tags</h3>
+          <div className="task-row-meta">
+            {task.tags.tags.length ? (
+              task.tags.tags.map((tag) => (
+                <span className="task-tag" key={tag.id}>
+                  {tag.name}
+                </span>
+              ))
+            ) : (
+              <span className="muted">No tags.</span>
+            )}
+          </div>
+          <Attachments
+            taskId={task.id}
+            workspaceId={workspaceId}
+            canEdit={false}
+            onBusy={() => undefined}
+          />
+          <dl className="task-detail-facts task-detail-dates">
+            <div>
+              <dt>Created</dt>
+              <dd>{new Date(task.created_at).toLocaleString()}</dd>
+            </div>
+            <div>
+              <dt>Updated</dt>
+              <dd>{new Date(task.updated_at).toLocaleString()}</dd>
+            </div>
+            {task.completed_at && (
+              <div>
+                <dt>Completed</dt>
+                <dd>{new Date(task.completed_at).toLocaleString()}</dd>
+              </div>
+            )}
+          </dl>
+          <div className="task-actions">
+            <button className="secondary" onClick={onClose}>
+              Close
+            </button>
+            {canEdit && (
+              <button className="primary" onClick={() => setEditing(true)}>
+                Edit task
+              </button>
+            )}
+          </div>
+        </article>
+      </Modal>
+    );
+  }
   return (
     <EditorForm
       key={taskId || 'new'}
@@ -136,11 +211,7 @@ function EditorForm({
     else onClose();
   };
   return (
-    <Modal
-      title={task ? 'A little closer.' : 'One thing at a time.'}
-      busy={busy}
-      onClose={close}
-    >
+    <Modal title={task ? 'Edit task' : 'New task'} busy={busy} onClose={close}>
       {confirm ? (
         <div className="task-confirm">
           <h3>

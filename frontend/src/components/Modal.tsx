@@ -30,7 +30,6 @@ export function Modal({
     >
       <div className="workspace-dialog-heading">
         <div>
-          <p className="eyebrow">A LITTLE ROOM TO BEGIN</p>
           <h2 id="workspace-dialog-title">{title}</h2>
         </div>
         <button

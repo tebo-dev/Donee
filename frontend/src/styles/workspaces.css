@@ -712,3 +712,71 @@ kbd {
 .workspace-delete p {
   margin-block: 0.75rem;
 }
+
+/* Living themes: the page title sits outside the floating workspace. */
+.workspace-stage {
+  width: min(1280px, calc(100% - 80px));
+  margin: 32px auto 48px;
+  flex: 1;
+}
+.workspace-stage-heading {
+  margin: 0 0 26px;
+}
+.workspace-stage-heading h1 {
+  margin: 0;
+  font-size: clamp(30px, 4vw, 44px);
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  overflow-wrap: anywhere;
+}
+.workspace-shell {
+  min-height: 570px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-surface), transparent 12%);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 24px 80px #0003;
+}
+.workspace-sidebar {
+  background: transparent;
+  border-radius: 12px 0 0 12px;
+}
+.workspace-main {
+  padding: 26px 30px 32px;
+}
+.workspace-breadcrumb {
+  margin-bottom: 20px;
+}
+.workspace-page-heading {
+  margin-bottom: 20px;
+}
+.workspace-page-heading:empty {
+  display: none;
+}
+.workspace-directory {
+  background: transparent;
+  border-radius: 6px;
+}
+.workspace-facts {
+  opacity: 0.85;
+}
+@media (max-width: 900px) {
+  .workspace-stage {
+    width: calc(100% - 32px);
+    margin-top: 24px;
+  }
+  .workspace-main {
+    padding: 22px;
+  }
+}
+@media (max-width: 600px) {
+  .workspace-stage {
+    width: calc(100% - 20px);
+  }
+  .workspace-main {
+    padding: 18px 14px;
+  }
+  .workspace-shell {
+    border-radius: 8px;
+  }
+}

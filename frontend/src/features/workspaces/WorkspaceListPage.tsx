@@ -40,7 +40,7 @@ export function WorkspaceListPage() {
   if (query.isPending)
     return (
       <p className="workspace-loading" role="status">
-        Finding your little corners…
+        Loading workspaces…
       </p>
     );
   if (query.isError && !query.data)
@@ -58,14 +58,6 @@ export function WorkspaceListPage() {
         <span>~/</span> personal_space <span>/</span> workspaces
       </div>
       <header className="workspace-page-heading">
-        <div>
-          <p className="eyebrow">A PLACE FOR EVERY PART OF YOUR DAY</p>
-          <h1>Your little corners.</h1>
-          <p>
-            Big plans, small errands, something just for you. Give each a little
-            room.
-          </p>
-        </div>
         <button
           className="primary"
           onClick={(event) => createWorkspace(event.currentTarget)}
@@ -129,7 +121,6 @@ export function WorkspaceListPage() {
                 </span>
                 <div className="workspace-row-name">
                   <h2>{workspace.name}</h2>
-                  <p>Your own little space</p>
                 </div>
                 <span className="workspace-created">
                   Created {createdDate(workspace.created_at)}

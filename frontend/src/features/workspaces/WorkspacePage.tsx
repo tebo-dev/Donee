@@ -1,7 +1,6 @@
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { ArrowLeft } from '@phosphor-icons/react/dist/csr/ArrowLeft';
 
-import { FolderSimple } from '@phosphor-icons/react/dist/csr/FolderSimple';
 import { GearSix } from '@phosphor-icons/react/dist/csr/GearSix';
 import { useWorkspace, useWorkspaces } from './queries';
 import { createdDate } from './contracts';
@@ -27,7 +26,7 @@ export function WorkspacePage({ settings = false }: { settings?: boolean }) {
   if (query.isPending)
     return (
       <p className="workspace-loading" role="status">
-        Opening your little corner…
+        Loading workspace…
       </p>
     );
   if (query.isError)
@@ -56,27 +55,14 @@ export function WorkspacePage({ settings = false }: { settings?: boolean }) {
           </>
         )}
       </div>
-      <header className="workspace-page-heading">
-        <div>
-          <p className="eyebrow">
-            {settings
-              ? 'MAKE IT FEEL LIKE YOURS'
-              : 'YOUR LITTLE CORNER OF THE INTERNET'}
-          </p>
-          <h1>{workspace.name}</h1>
-          <p>
-            {settings
-              ? 'A name, a little identity. The details of your space.'
-              : 'A little room for whatever comes next.'}
-          </p>
-        </div>
-        <span className="workspace-heading-icon" aria-hidden="true">
-          <FolderSimple size={36} weight="duotone" />
-        </span>
-      </header>
+      {settings && (
+        <header className="workspace-page-heading">
+          <h2>Workspace settings</h2>
+        </header>
+      )}
       {created && !settings && (
         <p className="workspace-success" role="status">
-          Your new workspace is ready. Make yourself at home.
+          Workspace created.
         </p>
       )}
       <nav className="workspace-tabs" aria-label="Current workspace">
@@ -100,7 +86,7 @@ export function WorkspacePage({ settings = false }: { settings?: boolean }) {
         <section className="workspace-settings" aria-label="Workspace settings">
           <div className="settings-copy">
             <p className="eyebrow">01 / GENERAL</p>
-            <h2>A name of its own.</h2>
+            <h2>General</h2>
             <p>
               Change the name without changing the space. Your workspace address
               stays the same.
@@ -143,16 +129,18 @@ export function WorkspacePage({ settings = false }: { settings?: boolean }) {
           canEdit={canRename}
         />
       )}
-      <dl className="workspace-facts">
-        <div>
-          <dt>Created</dt>
-          <dd>{createdDate(workspace.created_at)}</dd>
-        </div>
-        <div>
-          <dt>Workspace ID</dt>
-          <dd>{workspace.id}</dd>
-        </div>
-      </dl>
+      {settings && (
+        <dl className="workspace-facts">
+          <div>
+            <dt>Created</dt>
+            <dd>{createdDate(workspace.created_at)}</dd>
+          </div>
+          <div>
+            <dt>Workspace ID</dt>
+            <dd>{workspace.id}</dd>
+          </div>
+        </dl>
+      )}
       <Link className="workspace-back" to="/workspaces">
         <ArrowLeft size={15} aria-hidden="true" />
         Back to all spaces

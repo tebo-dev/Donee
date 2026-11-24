@@ -263,7 +263,12 @@ test('appearance persists, password visibility is accessible, and all auth pages
     .getByRole('button', { name: 'Hide password', exact: true })
     .click();
   await page.getByRole('button', { name: 'Appearance', exact: true }).click();
-  for (const theme of ['Matrix', 'Terminal', 'Dracula', 'Akira']) {
+  for (const theme of [
+    'Koi Garden',
+    'Firefly Terminal',
+    'Abyss',
+    'Paper Sky',
+  ]) {
     await page.getByRole('button', { name: theme, exact: true }).click();
     await page.keyboard.press('Escape');
     expect(
@@ -285,10 +290,10 @@ test('appearance persists, password visibility is accessible, and all auth pages
     page.getByRole('button', { name: 'Appearance', exact: true }),
   ).toBeFocused();
   await page.reload();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'akira');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'sky');
   await expect(page.locator('html')).toHaveAttribute('data-font', 'fira');
   await page.getByRole('button', { name: 'Appearance', exact: true }).click();
-  await page.getByRole('button', { name: 'Matrix', exact: true }).click();
+  await page.getByRole('button', { name: 'Koi Garden', exact: true }).click();
   await page.keyboard.press('Escape');
   for (const path of ['/login', '/register', '/forgot-password']) {
     await page.goto(path);

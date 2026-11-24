@@ -77,7 +77,7 @@ test('task loading overlaps workspace detail and fresh navigation reuses the cac
   expect(tags).toBe(1);
   await page.getByRole('link', { name: /^All spaces/ }).click();
   await expect(
-    page.getByRole('heading', { name: 'Your little corners.' }),
+    page.getByRole('heading', { name: 'Your corners' }),
   ).toBeVisible();
   await page.getByRole('link', { name: 'My Space', exact: true }).click();
   await expect(

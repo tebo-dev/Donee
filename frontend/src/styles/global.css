@@ -173,3 +173,33 @@ button:disabled {
     scroll-behavior: auto !important;
   }
 }
+
+[hidden] {
+  display: none !important;
+}
+.ambient-background {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+}
+body {
+  isolation: isolate;
+}
+.app-header,
+.app-footer {
+  background: color-mix(in srgb, var(--color-bg), transparent 12%);
+}
+.appearance-dialog {
+  border-radius: 12px;
+}
+.theme-choices button {
+  font-size: 0.8rem;
+}
+.app-footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}

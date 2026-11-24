@@ -2,6 +2,7 @@ import '../../styles/tasks.css';
 import { useEffect, useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
+import { Funnel } from '@phosphor-icons/react/dist/csr/Funnel';
 import { Plus } from '@phosphor-icons/react/dist/csr/Plus';
 import { PixelComputer } from '../../components/PixelComputer';
 import { Modal } from '../../components/Modal';
@@ -29,6 +30,8 @@ export function TaskBoard({
   const [params, setParams] = useSearchParams();
   const selected = params.get('task');
   const [search, setSearch] = useState('');
+  const [searchVisible, setSearchVisible] = useState(false);
+  const [filtersVisible, setFiltersVisible] = useState(false);
   const [status, setStatus] = useState('active');
   const [sort, setSort] = useState('due_at');
   const [tag, setTag] = useState('');
@@ -69,11 +72,16 @@ export function TaskBoard({
   const [help, setHelp] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const newRef = useRef<HTMLButtonElement>(null);
+  function revealSearch() {
+    setSearchVisible(true);
+    requestAnimationFrame(() => searchRef.current?.focus());
+  }
   const trigger = useRef<HTMLElement | null>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const completionFocus = useRef<number | null>(null);
   const searchFocusPending = useRef(false);
   const leaveSearch = () => {
+    setSearchVisible(false);
     if (search !== debouncedSearch || query.isFetching) {
       searchFocusPending.current = true;
       searchRef.current?.blur();
@@ -171,6 +179,7 @@ export function TaskBoard({
     onCreate: () => open('new'),
     onHelp: () => setHelp(true),
     onLeaveSearch: leaveSearch,
+    onSearch: revealSearch,
     onToggle: (id) => {
       const task = visible.find((item) => item.id === id);
       if (task) toggle.mutate(task);
@@ -180,13 +189,28 @@ export function TaskBoard({
     <section className="task-board" aria-label="Workspace tasks">
       <div className="task-toolbar">
         <div>
-          <p className="eyebrow">YOUR NEXT SMALL VICTORY</p>
           <h2>
             Things to do
             <span className="task-count">{counts?.total ?? '—'}</span>
           </h2>
         </div>
         <div className="task-actions">
+          <button
+            className="secondary"
+            aria-expanded={filtersVisible}
+            aria-controls="task-filters"
+            onClick={() => setFiltersVisible((v) => !v)}
+          >
+            <Funnel size={16} aria-hidden="true" /> Filter
+            {status !== 'active' ||
+            tag ||
+            dueFrom ||
+            dueTo ||
+            sort !== 'due_at' ||
+            direction !== 'asc'
+              ? ' · Applied'
+              : ''}
+          </button>
           <button
             className="secondary"
             onClick={() => setHelp(true)}
@@ -215,14 +239,14 @@ export function TaskBoard({
         <span>{counts?.done ?? '—'} done</span>
         <span>{counts?.archived ?? '—'} archived</span>
       </div>
-      <div className="task-filters">
+      <div hidden={!searchVisible} className="task-search-panel">
         <label className="field task-search">
           Search tasks
           <input
             ref={searchRef}
             type="search"
             maxLength={80}
-            placeholder="Find your next thing…"
+            placeholder="Search tasks…"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             onKeyDown={(event) => {
@@ -233,95 +257,124 @@ export function TaskBoard({
             }}
           />
         </label>
-        <label className="field">
-          Show
-          <select
-            value={status}
-            onChange={(event) => {
-              setStatus(event.target.value);
-              setOffset(0);
-            }}
-          >
-            <option value="active">Active</option>
-            <option value="all">All tasks</option>
-            {statuses.map((item) => (
-              <option key={item} value={item}>
-                {statusLabels[item]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          Sort by
-          <select
-            value={sort}
-            onChange={(event) => {
-              setSort(event.target.value);
-              setOffset(0);
-            }}
-          >
-            <option value="due_at">Due date</option>
-            <option value="priority">Priority</option>
-            <option value="title">Title</option>
-            <option value="status">Status</option>
-          </select>
-        </label>
-        <label className="field">
-          Filter tag
-          <select
-            value={tag}
-            onChange={(event) => {
-              setTag(event.target.value);
-              setOffset(0);
-            }}
-          >
-            <option value="">All tags</option>
-            {tags.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <button className="secondary" onClick={leaveSearch}>
+          Hide search
+        </button>
       </div>
-      <div className="task-filters">
-        <label className="field">
-          Direction
-          <select
-            value={direction}
-            onChange={(event) => {
-              setDirection(event.target.value);
-              setOffset(0);
-            }}
-          >
-            <option value="asc">Ascending</option>
-            <option value="desc">Descending</option>
-          </select>
-        </label>
-        <label className="field">
-          Due from
-          <input
-            type="date"
-            value={dueFrom}
-            max={dueTo || undefined}
-            onChange={(event) => {
-              setDueFrom(event.target.value);
-              setOffset(0);
-            }}
-          />
-        </label>
-        <label className="field">
-          Due through
-          <input
-            type="date"
-            value={dueTo}
-            min={dueFrom || undefined}
-            onChange={(event) => {
-              setDueTo(event.target.value);
-              setOffset(0);
-            }}
-          />
-        </label>
+      {!searchVisible && search && (
+        <p className="task-results">
+          Search: {search}{' '}
+          <button className="text-button" onClick={() => setSearch('')}>
+            Clear search
+          </button>
+        </p>
+      )}
+      <div id="task-filters" hidden={!filtersVisible}>
+        <div className="task-filters">
+          <label className="field">
+            Show
+            <select
+              value={status}
+              onChange={(event) => {
+                setStatus(event.target.value);
+                setOffset(0);
+              }}
+            >
+              <option value="active">Active</option>
+              <option value="all">All tasks</option>
+              {statuses.map((item) => (
+                <option key={item} value={item}>
+                  {statusLabels[item]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            Sort by
+            <select
+              value={sort}
+              onChange={(event) => {
+                setSort(event.target.value);
+                setOffset(0);
+              }}
+            >
+              <option value="due_at">Due date</option>
+              <option value="priority">Priority</option>
+              <option value="title">Title</option>
+              <option value="status">Status</option>
+            </select>
+          </label>
+          <label className="field">
+            Filter tag
+            <select
+              value={tag}
+              onChange={(event) => {
+                setTag(event.target.value);
+                setOffset(0);
+              }}
+            >
+              <option value="">All tags</option>
+              {tags.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="task-filters">
+          <label className="field">
+            Direction
+            <select
+              value={direction}
+              onChange={(event) => {
+                setDirection(event.target.value);
+                setOffset(0);
+              }}
+            >
+              <option value="asc">Ascending</option>
+              <option value="desc">Descending</option>
+            </select>
+          </label>
+          <label className="field">
+            Due from
+            <input
+              type="date"
+              value={dueFrom}
+              max={dueTo || undefined}
+              onChange={(event) => {
+                setDueFrom(event.target.value);
+                setOffset(0);
+              }}
+            />
+          </label>
+          <label className="field">
+            Due through
+            <input
+              type="date"
+              value={dueTo}
+              min={dueFrom || undefined}
+              onChange={(event) => {
+                setDueTo(event.target.value);
+                setOffset(0);
+              }}
+            />
+          </label>
+        </div>
+        <button
+          className="text-button"
+          onClick={() => {
+            setStatus('active');
+            setTag('');
+            setDueFrom('');
+            setDueTo('');
+            setSort('due_at');
+            setDirection('asc');
+            setOffset(0);
+          }}
+        >
+          Reset filters
+        </button>
       </div>
       <FormError message={query.error?.message || toggle.error?.message} />
       {query.isError && (
@@ -336,8 +389,8 @@ export function TaskBoard({
       ) : !query.isError && counts?.total === 0 ? (
         <div className="task-empty">
           <PixelComputer large />
-          <h3>A clear screen. A fresh start.</h3>
-          <p>Big ideas begin with one small thing.</p>
+          <h3>No tasks yet.</h3>
+
           {canEdit && (
             <button
               className="secondary"
@@ -450,7 +503,14 @@ export function TaskBoard({
       )}
       <p className="task-key-hint">
         <kbd>j</kbd>
-        <kbd>k</kbd> move <kbd>l</kbd> open <kbd>x</kbd> complete <kbd>/</kbd>{' '}
+        <kbd>k</kbd> move <kbd>l</kbd> open <kbd>x</kbd> complete{' '}
+        <button
+          className="text-button"
+          onClick={revealSearch}
+          aria-label="Open task search"
+        >
+          <kbd>/</kbd>
+        </button>{' '}
         search <kbd>a</kbd> add
       </p>
       {selected &&
@@ -464,6 +524,7 @@ export function TaskBoard({
           )
         ) : /^[\da-f]{8}(-[\da-f]{4}){3}-[\da-f]{12}$/i.test(selected) ? (
           <TaskEditor
+            key={selected}
             taskId={selected}
             workspaceId={workspaceId}
             canEdit={canEdit}
@@ -481,10 +542,7 @@ export function TaskBoard({
         />
       )}
       {help && (
-        <Modal
-          title="Keep your hands on the keys."
-          onClose={() => setHelp(false)}
-        >
+        <Modal title="Keyboard shortcuts" onClose={() => setHelp(false)}>
           <dl className="task-shortcuts">
             <dt>j / k or ↓ / ↑</dt>
             <dd>Move through task rows</dd>

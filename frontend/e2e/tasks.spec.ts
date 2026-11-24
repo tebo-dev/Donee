@@ -40,6 +40,8 @@ async function open(
   await expect(
     page.getByRole('heading', { name: 'Things to do' }),
   ).toBeVisible();
+  await expect(page.getByLabel('Sort by')).toBeHidden();
+  if (!suffix) await page.getByRole('button', { name: /^Filter/ }).click();
 }
 async function create(
   request: APIRequestContext,
@@ -88,6 +90,7 @@ test('create, edit, complete, reopen, archive and delete persisted tasks', async
     .click();
   await expect(dialog).not.toBeVisible();
   await page.getByRole('button', { name: /Ship a small thing.*To do/ }).click();
+  await page.getByRole('button', { name: 'Edit task', exact: true }).click();
   await expect(dialog.getByLabel('Description', { exact: true })).toHaveValue(
     'Keep the real details here.',
   );
@@ -106,6 +109,7 @@ test('create, edit, complete, reopen, archive and delete persisted tasks', async
   await page
     .getByRole('button', { name: 'Complete Ship a small thing', exact: true })
     .click();
+  await page.getByRole('button', { name: /^Filter/ }).click();
   await page
     .getByRole('combobox', { name: 'Show', exact: true })
     .selectOption('done');
@@ -122,6 +126,7 @@ test('create, edit, complete, reopen, archive and delete persisted tasks', async
     .getByRole('combobox', { name: 'Show', exact: true })
     .selectOption('all');
   await page.getByRole('button', { name: /Ship a small thing.*To do/ }).click();
+  await page.getByRole('button', { name: 'Edit task', exact: true }).click();
   await dialog
     .getByRole('combobox', { name: 'Status', exact: true })
     .selectOption('archived');
@@ -129,6 +134,7 @@ test('create, edit, complete, reopen, archive and delete persisted tasks', async
   await page
     .getByRole('button', { name: /Ship a small thing.*Archived/ })
     .click();
+  await page.getByRole('button', { name: 'Edit task', exact: true }).click();
   await dialog
     .getByRole('button', { name: 'Delete task', exact: true })
     .click();
@@ -170,11 +176,13 @@ test('tags and link attachments persist; rename and removal use real routes', as
   await page
     .getByRole('button', { name: /Research a small idea.*To do/ })
     .click();
+  await page.getByRole('button', { name: 'Edit task', exact: true }).click();
   await dialog.getByRole('checkbox', { name: 'Ideas' }).check();
   await dialog.getByRole('button', { name: 'Save task', exact: true }).click();
   await page
     .getByRole('button', { name: /Research a small idea.*Ideas/ })
     .click();
+  await page.getByRole('button', { name: 'Edit task', exact: true }).click();
   await dialog.getByLabel('Attachment name', { exact: true }).fill('Reference');
   await dialog.getByLabel('Link address').fill('https://example.com/research');
   await dialog.getByRole('button', { name: 'Add link', exact: true }).click();
@@ -224,6 +232,7 @@ test('keyboard navigation, dirty-close confirmation and failed saves preserve dr
   ).toBeFocused();
   await page.keyboard.press('k');
   await page.keyboard.press('l');
+  await page.getByRole('button', { name: 'Edit task', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('Task title').fill('Draft xja/k');
   await page.keyboard.press('Escape');
@@ -245,6 +254,9 @@ test('keyboard navigation, dirty-close confirmation and failed saves preserve dr
   await expect(first).toBeFocused();
   await page.keyboard.press('/');
   await expect(page.getByLabel('Search tasks')).toBeFocused();
+  await page
+    .getByRole('button', { name: 'Open task search', exact: true })
+    .click();
   await page.getByLabel('Search tasks').fill('Beta');
   await expect(first).not.toBeVisible();
 });
@@ -263,10 +275,16 @@ test('search includes tasks after first API page and filters reset', async ({
   await page.getByRole('button', { name: 'Next page' }).click();
   await expect(page.getByText('2 of 102 tasks · page 3 of 3')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Next page' })).toBeDisabled();
+  await page
+    .getByRole('button', { name: 'Open task search', exact: true })
+    .click();
   await page.getByLabel('Search tasks').fill('Item 101');
   await expect(
     page.getByRole('button', { name: /Item 101.*To do/ }),
   ).toBeVisible();
+  await page
+    .getByRole('button', { name: 'Open task search', exact: true })
+    .click();
   await page.getByLabel('Search tasks').fill('nothing matches');
   await page.getByRole('button', { name: 'Show all tasks' }).click();
   await expect(page.getByText('50 of 102 tasks · page 1 of 3')).toBeVisible();
@@ -284,7 +302,7 @@ test('failed loading, invalid links and foreign task IDs do not expose task data
   await expect(page.getByRole('alert')).toContainText('Cannot reach Donee');
   await page.unroute('**/api/tasks?**');
   await page.getByRole('button', { name: 'Retry tasks' }).click();
-  await expect(page.getByText('A clear screen. A fresh start.')).toBeVisible();
+  await expect(page.getByText('No tasks yet.')).toBeVisible();
   await page.goto(`/workspaces/${account.workspace}?task=${task.id}`);
   await expect(page.getByRole('dialog').getByRole('alert')).toBeVisible();
   await expect(page.getByText('Private other task')).not.toBeVisible();
@@ -305,13 +323,18 @@ test('task views fit mobile and every theme passes accessibility checks', async 
     'Make room for a really long task title that wraps on a small screen',
   );
   await open(page, account);
-  for (const theme of ['matrix', 'terminal', 'dracula', 'akira']) {
-    await page.evaluate(
-      (value) => (document.documentElement.dataset.theme = value),
-      theme,
-    );
+  for (const theme of [
+    'Koi Garden',
+    'Firefly Terminal',
+    'Abyss',
+    'Paper Sky',
+  ]) {
+    await page.getByRole('button', { name: 'Appearance', exact: true }).click();
+    await page.getByRole('button', { name: theme, exact: true }).click();
+    await page.keyboard.press('Escape');
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   }
+  await page.getByRole('button', { name: /^Filter/ }).click();
   for (const width of [320, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     expect(
@@ -325,7 +348,8 @@ test('task views fit mobile and every theme passes accessibility checks', async 
     });
   }
   await page.getByRole('button', { name: /Make room.*To do/ }).click();
-  await expect(page.getByLabel('Task title')).toBeVisible();
+  await page.getByRole('button', { name: 'Edit task', exact: true }).click();
+  await expect(page.getByLabel('Task title', { exact: true })).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.setViewportSize({ width: 320, height: 900 });
   expect(
@@ -346,6 +370,7 @@ test('file upload, download, transfer failure and deletion use attachment lifecy
   const account = await seed(request);
   const task = await create(request, account, 'Keep a useful file');
   await open(page, account, `?task=${task.id}`);
+  await page.getByRole('button', { name: 'Edit task', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('Upload file').setInputFiles({
     name: 'reference.txt',
@@ -403,6 +428,7 @@ test('editing completed task details preserves status and completion metadata', 
     })
   ).json();
   await open(page, account, `?task=${task.id}`);
+  await page.getByRole('button', { name: 'Edit task', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog
     .getByLabel('Description', { exact: true })
@@ -428,6 +454,7 @@ test('pending uploads can be verified after a confirmation outage', async ({
   const account = await seed(request);
   const task = await create(request, account, 'Verify a pending file');
   await open(page, account, `?task=${task.id}`);
+  await page.getByRole('button', { name: 'Edit task', exact: true }).click();
   await page.route('**/attachments/*/uploaded', (route) => route.abort());
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('Upload file').setInputFiles({
@@ -469,6 +496,7 @@ test('task shortcuts work on arrival, outside the list, and after leaving search
   await page.keyboard.press('Escape');
   await expect(beta).toBeFocused();
   await page.keyboard.press('l');
+  await page.getByRole('button', { name: 'Edit task', exact: true }).click();
   await expect(page.getByRole('dialog').getByLabel('Task title')).toHaveValue(
     'Beta shortcut task',
   );
@@ -480,11 +508,12 @@ test('task shortcuts work on arrival, outside the list, and after leaving search
     '',
   );
   await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.keyboard.press('?');
   await expect(
     page
       .getByRole('dialog')
-      .getByRole('heading', { name: 'Keep your hands on the keys.' }),
+      .getByRole('heading', { name: 'Keyboard shortcuts' }),
   ).toBeVisible();
 });
 
@@ -503,11 +532,17 @@ test('task shortcuts respect other dialogs, editable fields, modifiers and route
   await page.keyboard.press('/');
   await page.keyboard.press('j');
   await expect(page.getByRole('dialog')).toHaveCount(1);
-  await expect(page.getByLabel('Task title')).toHaveCount(0);
+  await expect(page.getByLabel('Task title', { exact: true })).toHaveCount(0);
   await page.keyboard.press('Escape');
+  await page
+    .getByRole('button', { name: 'Open task search', exact: true })
+    .click();
   await page.getByLabel('Search tasks').fill('ajkx/?');
   await expect(page.getByLabel('Search tasks')).toHaveValue('ajkx/?');
   await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page
+    .getByRole('button', { name: 'Open task search', exact: true })
+    .click();
   await page.getByLabel('Search tasks').fill('');
   await page.keyboard.press('Escape');
   await page.keyboard.press('Control+a');
@@ -558,9 +593,15 @@ test('server filters keep workspace counts and honor literal search, due ranges 
   await expect(page.locator('[data-open-task]').first()).toContainText(
     'Literal %_ task',
   );
+  await page
+    .getByRole('button', { name: 'Open task search', exact: true })
+    .click();
   await page.getByLabel('Search tasks').fill('%_');
   await expect(page.getByText('1 of 1 tasks', { exact: true })).toBeVisible();
   await expect(page.getByText('1 done', { exact: true })).toBeVisible();
+  await page
+    .getByRole('button', { name: 'Open task search', exact: true })
+    .click();
   await page.getByLabel('Search tasks').fill('');
   await page.getByLabel('Due from', { exact: true }).fill('2026-11-02');
   await page.getByLabel('Due through', { exact: true }).fill('2026-11-03');
@@ -581,6 +622,7 @@ test('workspace deletion waits for an in-flight file transfer after navigating a
   await page.getByRole('link', { name: 'Settings', exact: true }).click();
   await page.getByRole('link', { name: 'Overview', exact: true }).click();
   await page.getByRole('button', { name: /Task with a file.*To do/ }).click();
+  await page.getByRole('button', { name: 'Edit task', exact: true }).click();
   let release!: () => void;
   let uploading = false;
   await page.route('**/api/__test/storage', async (route) => {
@@ -619,4 +661,42 @@ test('workspace deletion waits for an in-flight file transfer after navigating a
       })
     ).status(),
   ).toBe(404);
+});
+
+test('task details start read-only and compact controls preserve hidden filters', async ({
+  page,
+  request,
+}) => {
+  const account = await seed(request);
+  const task = await create(request, account, 'Read before editing');
+  await open(page, account);
+  await page.getByRole('button', { name: /^Filter/ }).click();
+  await expect(page.getByLabel('Sort by')).toBeHidden();
+  await expect(page.getByLabel('Search tasks')).toBeHidden();
+  await page.locator('#main-content').focus();
+  await page.keyboard.press('/');
+  await expect(page.getByLabel('Search tasks')).toBeFocused();
+  await page.getByLabel('Search tasks').fill('Read before');
+  await page.keyboard.press('Escape');
+  await expect(page.getByLabel('Search tasks')).toBeHidden();
+  await expect(page.getByText('Search: Read before')).toBeVisible();
+  await page
+    .getByRole('button', { name: /Read before editing.*To do/ })
+    .click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('heading', { name: task.title })).toBeVisible();
+  await expect(dialog.getByText('A real persisted description.')).toBeVisible();
+  await expect(dialog.getByLabel('Task title')).toHaveCount(0);
+  await expect(dialog.getByLabel('Upload file')).toHaveCount(0);
+  await expect(
+    dialog.getByRole('button', { name: 'Delete task', exact: true }),
+  ).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Edit task', exact: true }).click();
+  await expect(dialog.getByLabel('Task title')).toHaveValue(task.title);
+  await dialog.getByLabel('Task title').fill('Reviewed and edited');
+  await dialog.getByRole('button', { name: 'Save task', exact: true }).click();
+  const saved = await (
+    await request.get(`/api/tasks/${task.id}`, { headers: account.headers })
+  ).json();
+  expect(saved.title).toBe('Reviewed and edited');
 });

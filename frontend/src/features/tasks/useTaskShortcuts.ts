@@ -11,6 +11,7 @@ export function useTaskShortcuts({
   onHelp,
   onToggle,
   onLeaveSearch,
+  onSearch,
 }: {
   enabled: boolean;
   canEdit: boolean;
@@ -21,6 +22,7 @@ export function useTaskShortcuts({
   onHelp: () => void;
   onToggle: (id: string) => void;
   onLeaveSearch: () => void;
+  onSearch: () => void;
 }) {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -77,7 +79,7 @@ export function useTaskShortcuts({
       }
       if (event.key === '/') {
         event.preventDefault();
-        searchRef.current?.focus();
+        onSearch();
         return;
       }
       if (event.key === '?') {
@@ -134,5 +136,6 @@ export function useTaskShortcuts({
     onHelp,
     onToggle,
     onLeaveSearch,
+    onSearch,
   ]);
 }

@@ -40,7 +40,12 @@ test('legal documents are public, readable, linked and use the configured contac
     ).toEqual([]);
   }
   await page.goto('/legal/privacy');
-  for (const theme of ['Matrix', 'Terminal', 'Dracula', 'Akira']) {
+  for (const theme of [
+    'Koi Garden',
+    'Firefly Terminal',
+    'Abyss',
+    'Paper Sky',
+  ]) {
     await page.getByRole('button', { name: 'Appearance', exact: true }).click();
     await page.getByRole('button', { name: theme, exact: true }).click();
     await page.keyboard.press('Escape');
@@ -102,14 +107,14 @@ test('appearance remembering is optional and can be removed without clearing sig
     name: 'Remember appearance on this device',
   });
   await expect(remember).not.toBeChecked();
-  await page.getByRole('button', { name: 'Dracula', exact: true }).click();
+  await page.getByRole('button', { name: 'Abyss', exact: true }).click();
   expect(
     await page.evaluate(() => localStorage.getItem('donee-appearance')),
   ).toBeNull();
   await remember.check();
   await page.getByRole('button', { name: /Fira Code/ }).click();
   await page.reload();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dracula');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'abyss');
   await expect(page.locator('html')).toHaveAttribute('data-font', 'fira');
   await page.getByRole('button', { name: 'Appearance', exact: true }).click();
   // Sentinel belongs to the test, not a mock login. Preference removal must not clear unrelated storage.
@@ -117,7 +122,7 @@ test('appearance remembering is optional and can be removed without clearing sig
     sessionStorage.setItem('appearance-test-sentinel', 'keep'),
   );
   await remember.uncheck();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dracula');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'abyss');
   expect(
     await page.evaluate(() => localStorage.getItem('donee-appearance')),
   ).toBeNull();
@@ -126,12 +131,12 @@ test('appearance remembering is optional and can be removed without clearing sig
       sessionStorage.getItem('appearance-test-sentinel'),
     ),
   ).toBe('keep');
-  await page.getByRole('button', { name: 'Akira', exact: true }).click();
+  await page.getByRole('button', { name: 'Paper Sky', exact: true }).click();
   expect(
     await page.evaluate(() => localStorage.getItem('donee-appearance')),
   ).toBeNull();
   await page.reload();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'matrix');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'koi');
   await page.getByRole('button', { name: 'Appearance', exact: true }).click();
   await expect(remember).not.toBeChecked();
 });

@@ -83,10 +83,8 @@ test('default space, creation, rename conflicts, and persistence use the real AP
     page.getByRole('heading', { name: 'Side quests', exact: true }),
   ).toBeVisible();
   await expect(
-    page
-      .getByRole('status')
-      .filter({ hasText: 'Your new workspace is ready.' }),
-  ).toContainText('Your new workspace is ready.');
+    page.getByRole('status').filter({ hasText: 'Workspace created.' }),
+  ).toContainText('Workspace created.');
   const workspaceId = page.url().split('/').at(-1)!;
   await page.getByRole('link', { name: 'Settings', exact: true }).click();
   await page.getByLabel('Workspace name').fill('My Space');
@@ -208,7 +206,7 @@ test('loading and connection failures recover without showing fake workspace dat
   });
   await openSpaces(page, account.token);
   await expect(
-    page.getByText('Finding your little corners…', { exact: true }),
+    page.getByText('Loading workspaces…', { exact: true }),
   ).toBeVisible();
   release();
   await expect(
@@ -356,9 +354,14 @@ test('workspace pages and dialogs are accessible, responsive, and theme-aware', 
   await create(request, account.headers, 'Ideas for a slower Sunday');
   await openSpaces(page, account.token);
   await expect(
-    page.getByRole('heading', { name: 'Your little corners.' }),
+    page.getByRole('heading', { name: 'Your corners' }),
   ).toBeVisible();
-  for (const theme of ['Matrix', 'Terminal', 'Dracula', 'Akira']) {
+  for (const theme of [
+    'Koi Garden',
+    'Firefly Terminal',
+    'Abyss',
+    'Paper Sky',
+  ]) {
     await page.getByRole('button', { name: 'Appearance', exact: true }).click();
     await page.getByRole('button', { name: theme, exact: true }).click();
     await page.keyboard.press('Escape');
@@ -368,7 +371,7 @@ test('workspace pages and dialogs are accessible, responsive, and theme-aware', 
     ).toEqual([]);
   }
   await page.getByRole('button', { name: 'Appearance', exact: true }).click();
-  await page.getByRole('button', { name: 'Matrix', exact: true }).click();
+  await page.getByRole('button', { name: 'Koi Garden', exact: true }).click();
   await page.keyboard.press('Escape');
   for (const path of [
     '/workspaces',

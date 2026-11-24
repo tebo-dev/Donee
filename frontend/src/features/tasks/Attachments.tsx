@@ -182,7 +182,7 @@ export function Attachments({
   }, [mutation.isPending, onBusy]);
   return (
     <section className="task-attachments" aria-label="Task attachments">
-      <h3>Keep it close.</h3>
+      <h3>Attachments</h3>
       <p className="field-hint">Links and files for this task.</p>
       {query.isPending && <p role="status">Loading attachments…</p>}
       <FormError message={query.error?.message || mutation.error?.message} />
