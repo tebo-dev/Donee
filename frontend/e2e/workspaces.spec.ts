@@ -163,8 +163,8 @@ test('search, keyboard switching, dialog cancellation, and duplicate creation pr
     .getByRole('link', { name: 'Back to all spaces', exact: true })
     .click();
   const trigger = page
-    .getByRole('button', { name: 'New workspace', exact: true })
-    .last();
+    .getByRole('main')
+    .getByRole('button', { name: 'New workspace', exact: true });
   await trigger.click();
   await page
     .getByRole('dialog')

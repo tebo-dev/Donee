@@ -3,6 +3,9 @@ import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { Brand } from '../components/Brand';
 import { Appearance } from '../components/Appearance';
+import { Timer } from '@phosphor-icons/react/dist/csr/Timer';
+import { useAuth } from '../features/auth/auth-context';
+import { PomodoroProvider } from '../features/pomodoro/PomodoroProvider';
 import { AuthLayout } from '../features/auth/AuthLayout';
 import { LoginPage } from '../features/auth/LoginPage';
 import { RegisterPage } from '../features/auth/RegisterPage';
@@ -34,6 +37,12 @@ const WorkspacePage = lazy(() =>
   })),
 );
 
+const PomodoroPage = lazy(() =>
+  import('../features/pomodoro/PomodoroPage').then((module) => ({
+    default: module.PomodoroPage,
+  })),
+);
+
 const LegalPage = lazy(() => import('../features/legal/LegalPage'));
 
 const titles: Record<string, string> = {
@@ -49,10 +58,20 @@ const titles: Record<string, string> = {
   '/verify-reset-code': 'Check your code',
   '/reset-password': 'Choose a password',
   '/account': 'Your account',
+  '/pomodoro': 'Pomodoro',
 };
 
 export function App() {
-  const { pathname } = useLocation();
+  return (
+    <PomodoroProvider>
+      <AppContent />
+    </PomodoroProvider>
+  );
+}
+
+function AppContent() {
+  const { pathname, search, state: routeState } = useLocation();
+  const { session } = useAuth();
   const workspaceRoute = pathname.startsWith('/workspaces');
   useEffect(() => {
     document.title = `${titles[pathname] || (pathname.startsWith('/workspaces') ? 'Your spaces' : 'A quiet corner')} / Donee`;
@@ -75,7 +94,24 @@ export function App() {
         <span className="edition">
           {workspaceRoute ? '~/ personal_space' : '[ PERSONAL SPACE ]'}
         </span>
-        <Appearance />
+        <div className="header-actions">
+          {session.status === 'authenticated' && (
+            <Link
+              className="appearance-trigger pomodoro-trigger"
+              to="/pomodoro"
+              state={
+                pathname === '/pomodoro'
+                  ? routeState
+                  : { from: pathname + search }
+              }
+              aria-current={pathname === '/pomodoro' ? 'page' : undefined}
+            >
+              <Timer size={17} aria-hidden="true" />
+              <span>Pomodoro</span>
+            </Link>
+          )}
+          <Appearance />
+        </div>
       </header>
       <Suspense
         fallback={
@@ -100,6 +136,7 @@ export function App() {
             </Route>
           </Route>
           <Route element={<SessionGate />}>
+            <Route path="/pomodoro" element={<PomodoroPage />} />
             <Route path="/account" element={<AccountPage />} />
             <Route path="/workspaces" element={<WorkspaceShell />}>
               <Route index element={<WorkspaceListPage />} />

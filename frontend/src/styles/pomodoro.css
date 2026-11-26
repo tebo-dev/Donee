@@ -1,0 +1,213 @@
+.pomodoro-page {
+  flex: 1;
+  width: min(100%, 780px);
+  margin: 0 auto;
+  padding: clamp(36px, 7vh, 76px) 24px 40px;
+}
+.pomodoro-clock-section {
+  text-align: center;
+}
+.pomodoro-clock-section h1 {
+  margin: 0 0 24px;
+  font: 11px/1.6 var(--font-mono);
+  color: var(--color-muted);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.pomodoro-phase {
+  margin: 0;
+  font: 13px/1.6 var(--font-mono);
+  color: var(--color-accent);
+}
+.pixel-clock {
+  width: min(100%, 640px);
+  margin: 12px auto 20px;
+  color: var(--color-text);
+}
+.pixel-clock svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(4px 5px 0 var(--color-bg));
+}
+.pomodoro-presets {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.pomodoro-presets legend {
+  margin: 0 auto 12px;
+  padding: 0;
+  font: 10px/1.6 var(--font-mono);
+  color: var(--color-muted);
+}
+.pomodoro-presets label {
+  position: relative;
+}
+.pomodoro-presets input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+}
+.pomodoro-presets span {
+  display: block;
+  min-width: 92px;
+  padding: 12px 18px;
+  border: 1px solid var(--color-border);
+  font: 12px/1.6 var(--font-mono);
+  background: color-mix(in srgb, var(--color-bg), transparent 12%);
+}
+.pomodoro-presets input:checked + span {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  background: var(--color-selected);
+}
+.pomodoro-presets input:focus-visible + span {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 4px;
+}
+.pomodoro-presets:disabled {
+  opacity: 0.6;
+}
+.pomodoro-presets:disabled input {
+  cursor: not-allowed;
+}
+.pomodoro-controls {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+.pomodoro-controls button {
+  justify-content: center;
+  gap: 10px;
+  min-width: 110px;
+}
+.pomodoro-controls button:active {
+  transform: none;
+}
+.pomodoro-controls .secondary {
+  background: color-mix(in srgb, var(--color-bg), transparent 12%);
+}
+.pomodoro-announcement {
+  min-height: 36px;
+  margin: 16px auto 24px;
+  max-width: 440px;
+  font: 10px/1.8 var(--font-mono);
+  color: var(--color-muted);
+}
+.pomodoro-tasks {
+  width: min(100%, 560px);
+  margin: 0 auto;
+  padding: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-surface), transparent 12%);
+  backdrop-filter: blur(10px);
+}
+.pomodoro-workspace-label {
+  display: block;
+  font: 10px/1.6 var(--font-mono);
+  color: var(--color-muted);
+  margin-bottom: 8px;
+}
+.pomodoro-tasks select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 13px;
+}
+.pomodoro-tasks p {
+  margin: 20px 0 0;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+.pomodoro-task-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 24px;
+}
+.pomodoro-task-heading h2 {
+  font: 11px/1.6 var(--font-mono);
+  margin: 0;
+}
+.pomodoro-task-heading > span {
+  font: 10px/1.6 var(--font-mono);
+  color: var(--color-muted);
+}
+.pomodoro-task-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  max-height: 240px;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+.pomodoro-task-list li {
+  display: grid;
+  grid-template-columns: 5px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: baseline;
+  padding: 13px 0;
+  border-top: 1px solid var(--color-border);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.pomodoro-task-dot {
+  width: 4px;
+  height: 4px;
+  background: var(--color-accent);
+}
+.pomodoro-task-status {
+  font: 9px/1.6 var(--font-mono);
+  color: var(--color-muted);
+}
+.pomodoro-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 16px;
+  font: 9px/1.6 var(--font-mono);
+}
+.pomodoro-pagination button {
+  padding: 8px;
+  font-size: 10px;
+  min-height: 44px;
+}
+.pomodoro-back {
+  display: block;
+  width: fit-content;
+  margin: 24px auto 0;
+  color: var(--color-muted);
+  font: 11px/1.6 var(--font-mono);
+  text-underline-offset: 4px;
+}
+@media (max-width: 480px) {
+  .pomodoro-page {
+    padding: 32px 20px;
+  }
+  .pomodoro-tasks {
+    padding: 18px;
+  }
+  .pomodoro-task-list li {
+    grid-template-columns: 5px minmax(0, 1fr);
+    gap: 8px;
+  }
+  .pomodoro-task-status {
+    grid-column: 2;
+  }
+}
